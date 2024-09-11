@@ -1,0 +1,215 @@
+Dataset cleaning report for gs-lf
+--- REMOVING NAN SMILES ---
+	Original size before removing NaN SMILES: 4983
+	Number of NaN SMILES: 0
+	Size after removing NaN SMILES: 4983
+--- REMOVING UNDESIRABLE ELEMENTS ---
+	Original size before removing undesirable elements: 4983
+	Purging undesirable elements in ['Na', 'K', 'Ca', 'Mg', 'Cr', 'B', 'Si', 'Ti', 'Fe', 'Al', 'Co', 'Zn', 'Cu', 'V', 'Bi', 'He', 'As', 'I', 'Sb', 'Pb', 'Ni', 'Os', 'Se', 'Hg', 'Ar', 'Cd', 'Kr', 'Rn', 'Se', 'Ta', 'U', 'Xe', 'Cd', 'Mo', 'Sn', 'Tl', 'Te', 'Y', 'Be']
+	Match found: SMILES [Cl-].[K+] contains K
+	Match found: SMILES O=C([O-])CN(CCN(CC(=O)[O-])CC(=O)[O-])CC(=O)[O-].[Ca+2].[Na+].[Na+] contains Na
+	Match found: SMILES O=C([O-])CC(O)(CC(=O)[O-])C(=O)[O-].[Na+].[Na+].[Na+] contains Na
+	Match found: SMILES CC(C)(CO)C(O)C(=O)NCCC(=O)[O-].CC(C)(CO)C(O)C(=O)NCCC(=O)[O-].[Ca+2] contains Ca
+	Match found: SMILES O=C([O-])CC(O)C(=O)[O-].[Na+].[Na+] contains Na
+	Match found: SMILES O=C([O-])CN(CCN(CC(=O)[O-])CC(=O)O)CC(=O)O.[Na+].[Na+] contains Na
+	Match found: SMILES O=C([O-])CCC(=O)[O-].[Na+].[Na+] contains Na
+	Match found: SMILES O=C([O-])C(O)C(O)C(O)C(O)CO.O=C([O-])C(O)C(O)C(O)C(O)CO.[Ca+2] contains Ca
+	Match found: SMILES O=C([O-])[O-].[Ca+2] contains Ca
+	Match found: SMILES O=C([O-])[O-].[Na+].[Na+] contains Na
+	Match found: SMILES C[Si]1(C)O[Si](C)(C)O[Si](C)(C)O[Si](C)(C)O[Si](C)(C)O[Si](C)(C)O1 contains Si
+	Match found: SMILES O=C([O-])[O-].[Mg+2] contains Mg
+	Match found: SMILES O=C([O-])[O-].[K+].[K+] contains K
+	Match found: SMILES O=C([O-])CC(O)(CC(=O)[O-])C(=O)[O-].O=C([O-])CC(O)(CC(=O)[O-])C(=O)[O-].[Ca+2].[Ca+2].[Ca+2] contains Ca
+	Match found: SMILES CC(O)C(=O)[O-].CC(O)C(=O)[O-].[Ca+2] contains Ca
+	Match found: SMILES O=C([O-])CC(O)(CC(=O)[O-])C(=O)[O-].[K+].[K+].[K+] contains K
+	Match found: SMILES O=C([O-])C(O)C(O)C(=O)[O-].[Na+].[Na+] contains Na
+	Match found: SMILES N.O=C([O-])CC(O)(CC(=O)[O-])C(=O)[O-].[Fe+3] contains Fe
+	Match found: SMILES O=P([O-])([O-])OC(CCO)CCO.O=P([O-])([O-])OCC(O)CO.[Fe+2].[Fe+2] contains Fe
+	Match found: SMILES O=[Ca] contains Ca
+	Match found: SMILES O=[Mg] contains Mg
+	Match found: SMILES O=[Zn] contains Zn
+	Match found: SMILES O=[V](=O)O[V](=O)=O contains V
+	Match found: SMILES O=[Cu] contains Cu
+	Match found: SMILES [Ca+2].[Ca+2].[O-][Si]([O-])([O-])[O-] contains Ca
+	Match found: SMILES O=c1nc[nH]c2c1ncn2C1OC(COP(=O)([O-])[O-])C(O)C1O.[Na+].[Na+] contains Na
+	Match found: SMILES O.O=S1(=O)N=C([O-])c2ccccc21.O=S1(=O)N=C([O-])c2ccccc21.[Ca+2] contains Ca
+	Match found: SMILES [He] contains He
+	Match found: SMILES [Zn] contains Zn
+	Match found: SMILES O=S(=O)([O-])[O-].[Mg+2] contains Mg
+	Match found: SMILES O=P([O-])([O-])O.[Na+].[Na+] contains Na
+	Match found: SMILES O=P([O-])([O-])[O-].[Na+].[Na+].[Na+] contains Na
+	Match found: SMILES O=[Si]=O contains Si
+	Match found: SMILES O=[N+]([O-])[O-].[Na+] contains Na
+	Match found: SMILES O=S(=O)([O-])[O-].[Fe+2] contains Fe
+	Match found: SMILES O=P([O-])([O-])OP(=O)([O-])[O-].[Na+].[Na+].[Na+].[Na+] contains Na
+	Match found: SMILES O=[N+]([O-])[O-].[K+] contains K
+	Match found: SMILES O=P([O-])([O-])[O-].O=P([O-])([O-])[O-].[Mg+2].[Mg+2].[Mg+2] contains Mg
+	Match found: SMILES O=P([O-])([O-])[O-].O=P([O-])([O-])[O-].[Ca+2].[Ca+2].[Ca+2] contains Ca
+	Match found: SMILES O=S(=O)([O-])[O-].[Ca+2] contains Ca
+	Match found: SMILES [Ca+2].[O-][I+2]([O-])[O-].[O-][I+2]([O-])[O-] contains Ca
+	Match found: SMILES O=P([O-])([O-])OP(=O)([O-])[O-].[Ca+2].[Ca+2] contains Ca
+	Match found: SMILES O.O.O.O.O.O.[Cl-].[Cl-].[Co+2] contains Co
+	Match found: SMILES COc1cc(CCCS(=O)(=O)[O-])ccc1OC(Cc1cccc(OC)c1O)CS(=O)(=O)[O-].[Ca+2] contains Ca
+	Match found: SMILES O=S(=O)([O-])[O-].O=S(=O)([O-])[O-].O=S(=O)([O-])[O-].[Al+3].[Al+3] contains Al
+	Match found: SMILES O.O.O=S(=O)([O-])[O-].[Ca+2] contains Ca
+	Match found: SMILES O=S([O-])[O-].[K+].[K+] contains K
+	Match found: SMILES O=[Ti]=O contains Ti
+	Match found: SMILES O=[Si]([O-])O.O=[Si]([O-])O.O=[Si]([O-])[O-].O=[Si]([O-])[O-].[Mg+2].[Mg+2].[Mg+2] contains Mg
+	Match found: SMILES O=S(=O)([O-])c1ccc(O)cc1.O=S(=O)([O-])c1ccc(O)cc1.[Zn+2] contains Zn
+	Match found: SMILES O=[Si]([O-])[O-].[Mg+2] contains Mg
+	Match found: SMILES O=S1(=O)N=C([O-])c2ccccc21.O=S1(=O)N=C([O-])c2ccccc21.[Ca+2] contains Ca
+	Match found: SMILES O=P([O-])([O-])[O-].[K+].[K+].[K+] contains K
+	Match found: SMILES O.O.O=C([O-])CC(O)(CC(=O)[O-])C(=O)[O-].[Na+].[Na+].[Na+] contains Na
+	Match found: SMILES [Mg+2].[OH-].[OH-] contains Mg
+	Match found: SMILES NC(CCC(=O)[O-])C(=O)[O-].[Ca+2] contains Ca
+	Match found: SMILES O=P([O-])([O-])O.[Mg+2] contains Mg
+	Match found: SMILES O=C([O-])c1ccccn1.O=C([O-])c1ccccn1.O=C([O-])c1ccccn1.[Cr+3] contains Cr
+	Match found: SMILES NC(CCC(=O)[O-])C(=O)[O-].[Mg+2] contains Mg
+	Match found: SMILES O=C([O-])O.[K+] contains K
+	Match found: SMILES O=P([O-])(O)O.[K+] contains K
+	Match found: SMILES CC(=O)[O-].[K+] contains K
+	Match found: SMILES CC(=O)[O-].[Na+] contains Na
+	Match found: SMILES O=C([O-])c1ccccc1.[Na+] contains Na
+	Match found: SMILES O=[Cr]O[Cr]=O contains Cr
+	Match found: SMILES O.O.O=C1[N-]S(=O)(=O)c2ccccc21.[Na+] contains Na
+	Match found: SMILES CCC(C)C(=O)C(=O)[O-].[Na+] contains Na
+	Match found: SMILES O=C([O-])[O-].[Mg+2].[OH-] contains Mg
+	Match found: SMILES O=P([O-])([O-])[O-].[Al+3].[Na+] contains Na
+	Match found: SMILES [Al+3].[Mg+2].[O-][Si]([O-])([O-])[O-] contains Mg
+	Match found: SMILES CCCCCCCCCCCCOS(=O)(=O)[O-].[Na+] contains Na
+	Match found: SMILES CC(C)CC(=O)C(=O)[O-].[Na+] contains Na
+	Match found: SMILES O[B-]1(O)OO[B-](O)(O)OO1.[Na+].[Na+] contains Na
+	Match found: SMILES [Ca+2].[OH-].[OH-] contains Ca
+	Match found: SMILES Cl.O=[Bi] contains Bi
+	Match found: SMILES CC(=O)O.O=CC(O)C(O)C(O)C(O)CO.[Na] contains Na
+	Match found: SMILES O.O.O.O.[Fe].[Fe].[Fe] contains Fe
+	Match found: SMILES [Al+3].[Al+3].[O-2].[O-2].[O-2] contains Al
+	Match found: SMILES O=C(O)C=CC(=O)O.[Na+] contains Na
+	Match found: SMILES O=C1[N-]S(=O)(=O)c2ccccc21.[K+] contains K
+	Match found: SMILES O=P(=O)[O-].[K+] contains K
+	Match found: SMILES O.O.O.O=P([O-])([O-])O.[Mg+2] contains Mg
+	Match found: SMILES O.O.O.O.O.O.O.O.OB1O[B-]2(O)OB(O)O[B-](O)(O1)O2.[Na+].[Na+] contains Na
+	Match found: SMILES O=C([O-])C(O)C(O)C(O)C(O)CO.[K+] contains K
+	Match found: SMILES O=[Si]([O-])[O-].O=[Si]([O-])[O-].[Al+3].[Na+] contains Na
+	Match found: SMILES O=C(O)CC(O)(CC(=O)O)C(=O)[O-].[Na+] contains Na
+	Match found: SMILES [K+].[O-][I+2]([O-])[O-] contains K
+	Match found: SMILES CC(O)C(=O)[O-].[Na+] contains Na
+	Match found: SMILES O=C1OC(C(O)CO)C([O-])=C1O.[Na+] contains Na
+	Match found: SMILES O=C([O-])C(=O)Cc1ccccc1.[Na+] contains Na
+	Match found: SMILES COc1cc(C=CC(=O)[O-])ccc1O.[Na+] contains Na
+	Match found: SMILES CCOCCOC(C)C(=O)[O-].[K+] contains K
+	Match found: SMILES CC(O)C(=O)[O-].[K+] contains K
+	Match found: SMILES O=P([O-])(O)O.[Na+] contains Na
+	Match found: SMILES O=C([O-])CC(O)C(=O)O.[Na+] contains Na
+	Match found: SMILES CC1=CC([O-])=NS(=O)(=O)O1.[K+] contains K
+	Match found: SMILES NC(CCC(=O)[O-])C(=O)O.O.[Na+] contains Na
+	Match found: SMILES O=C(O)C(O)C(O)C(O)C(O)CO.O=C(O)C(O)C(O)C(O)C(O)CO.[Fe] contains Fe
+	Match found: SMILES O=C([O-])C1OC(OC2C(C(=O)O)OC(OC3C(C(=O)[O-])OC(O)C(O)C3O)C(O)C2O)C(O)C(O)C1O.[Ca+2] contains Ca
+	Match found: SMILES CC1=C2N=C(C=C3N=C(C(C)=C4[N-]C(C(CC(N)=O)C4(C)CCC(=O)NCC(C)OP(=O)([O-])OC4C(CO)OC(n5cnc6cc(C)c(C)cc65)C4O)C4(C)N=C1C(CCC(N)=O)C4(C)CC(N)=O)C(CCC(N)=O)C3(C)C)C(CCC(N)=O)C2(C)CC(N)=O.O.[Co+2] contains Co
+	Match found: SMILES O=C1OC(C(O)CO)C(O)=C1[O-].O=C1OC(C(O)CO)C(O)=C1[O-].[Ca+2] contains Ca
+	Match found: SMILES O.O=C1OC(C(O)CO)C(O)=C1[O-].O=C1OC(C(O)CO)C(O)=C1[O-].[Ca+2] contains Ca
+	Match found: SMILES COc1ccc(C(=O)OCC(=O)[O-])cc1.[Na+] contains Na
+	Match found: SMILES CC(=O)[O-].CC(=O)[O-].CCC(=O)c1ccc(F)c(C2CC2NC(=O)Nc2ccc(C#N)cn2)c1O.[Zn+2] contains Zn
+	Match found: SMILES O=C([O-])C1OC(OC2C(C(=O)[O-])OC(O)C(O)C2O)C(O)C(O)C1O.[K+].[K+] contains K
+	Match found: SMILES Nc1nc2c(ncn2C2OC(COP(=O)([O-])[O-])C(O)C2O)c(=O)[nH]1.[Na+].[Na+] contains Na
+	Match found: SMILES CN1c2c(nc(N)[nH]c2=O)NCC1CNc1ccc(C(=O)NC(CCC(=O)[O-])C(=O)[O-])cc1.[Ca+2] contains Ca
+	Match found: SMILES O=c1[nH]cnc2c1ncn2C1OC(COP(=O)([O-])[O-])C(O)C1O.[Ca+2] contains Ca
+	Match found: SMILES Nc1nc2c(ncn2C2OC(COP(=O)([O-])[O-])C(O)C2O)c(=O)[nH]1.[Ca+2] contains Ca
+	Match found: SMILES Nc1nc2c(ncn2C2OC(COP(=O)([O-])[O-])C(O)C2O)c(=O)[nH]1.[K+].[K+] contains K
+	Total undesirable element SMILES removed: 110
+--- REMOVING DUPLICATES ---
+	Original size before removing duplicates: 4873
+	Number of SMILES removed: 0
+	Size after removing duplicates: 4873
+--- REMOVING SALTS, CHARGED MOLECULES AND MULTIMOLECULES ---
+	Original size before removing salts, charges and multimolecules: 4873
+	CC(=O)[n+]1cc(C)nc(C)c1 has charges
+	c1ccc(-c2ccc3ccccc3[o+]2)cc1 has charges
+	CC(C)C(=O)[O-].CCOc1cc(C=O)ccc1O has charges
+	CCOC(=O)CC(=CC(=O)[O-])C(=O)[O-] has charges
+	CC(=O)[O-].CC1=C(S)CCO1 has charges
+	C[NH+]1CCN(c2ccc(CO)cc2)CC1 has charges
+	CC1=[NH+]C(C)OC1C has charges
+	CCCCCCCC(=O)CC(=O)[O-].OCC(O)CO has charges
+	CCCCCC(=O)CC(=O)[O-].OCC(O)CO has charges
+	CCCCCCCCCCCC(=O)CC(=O)[O-].OCC(O)CO has charges
+	Total salts and charged SMILES removed: 10
+	Cc1ncc(C[n+]2csc(CCO)c2C)c(N)n1.Cl.[Cl-] has multiple molecules
+	C1CNCCN1.O=C(O)CCCCC(=O)O has multiple molecules
+	C=CC1CN2CCC1CC2C(O)c1ccnc2ccc(OC)cc12.O=S(=O)(O)O has multiple molecules
+	Cl.NC(CS)C(=O)O.O has multiple molecules
+	NC(CCC(=O)[O-])C(=O)O.[NH4+] has multiple molecules
+	N.N.O=S(=O)(O)O has multiple molecules
+	CC(=O)O.O=CC(O)C(O)C(O)C(O)CO has multiple molecules
+	O=C(O)c1ccccc1O.OCCN(CCO)CCO has multiple molecules
+	[Cl-].[NH4+] has multiple molecules
+	[NH4+].[NH4+].[S-2] has multiple molecules
+	Cl.NC(CS)C(=O)O has multiple molecules
+	C=CC1CN2CCC1CC2C(O)c1ccnc2ccc(OC)cc12.C=CC1CN2CCC1CC2C(O)c1ccnc2ccc(OC)cc12.O.O.O=S(=O)(O)O has multiple molecules
+	CC(C)CC(=O)O.N has multiple molecules
+	CCCCCCCCCCCCCCCCCCO.CCCCCCCCCCCCCCCCO has multiple molecules
+	Cl.NCCCC(N)C(=O)O has multiple molecules
+	Cl.Cl.NC(CSSCC(N)C(=O)O)C(=O)O has multiple molecules
+	CC(CC=O)CCCC(C)(C)O.Cc1c[nH]c2ccccc12 has multiple molecules
+	C#CCO.CCC(=O)CCC1C(C)=CCCC1(C)C has multiple molecules
+	CC(CC=O)CCCC(C)(C)O.c1ccc2[nH]ccc2c1 has multiple molecules
+	NC(CCC(=O)O)C(=O)O.NC(N)=NCCCC(N)C(=O)O has multiple molecules
+	Cl.NC(Cc1cnc[nH]1)C(=O)O.O has multiple molecules
+	NC(=O)CC(N)C(=O)O.O has multiple molecules
+	CC(O)CO.CCCCCCCCCCCCCCCCCC(=O)O has multiple molecules
+	Cl.NC(CCC(=O)O)C(=O)O has multiple molecules
+	CC(C)C(=O)[O-].CCOc1cc(C=O)ccc1O has multiple molecules
+	C=CC1CN2CCC1CC2C(O)c1ccnc2ccc(OC)cc12.Cl.O.O has multiple molecules
+	CC(=O)[O-].CC1=C(S)CCO1 has multiple molecules
+	CC(NC1C(C)(C)SC1(C)C)C(=O)NC(=O)C(N)CC(=O)O.CC(NC1C(C)(C)SC1(C)C)C(=O)NC(=O)C(N)CC(=O)O.O.O.O.O.O has multiple molecules
+	Cc1ccccc1C(O)O.OCC(O)CO has multiple molecules
+	CCC=CCC=CCC=CCCCCCCCC(=O)O.CCCCCC=CCC=CCCCCCCCC(=O)O has multiple molecules
+	CC1=CC(C)C(C)C(C=O)C1.CC1=CC(C)C(C=O)C(C)C1 has multiple molecules
+	CCCCCCCCCCCCCCCCC(=O)O.OCCO has multiple molecules
+	C[S+](C)CCC(N)C(=O)O.[Cl-] has multiple molecules
+	CCCCCCC(CCOC(C)=O)OC(C)=O.CCCCCCC(O)CCO has multiple molecules
+	CCc1nc(C)cnc1C.CCc1ncc(C)nc1C has multiple molecules
+	CCc1cnc(C)cn1.CCc1cncc(C)n1 has multiple molecules
+	C=C1C2CCC(C2)C1(C)CCC=C(C)COC(C)=O.CC(=O)OCC(C)=CCCC1(C)C2CC3C(C2)C31C has multiple molecules
+	CCCCCCCC(=O)CC(=O)[O-].OCC(O)CO has multiple molecules
+	CCCCCC(=O)CC(=O)[O-].OCC(O)CO has multiple molecules
+	CCCCCCCCCCCC(=O)CC(=O)[O-].OCC(O)CO has multiple molecules
+	CCOC1OC(CO)C(O)C(O)C1O.COc1cc(C=O)ccc1O has multiple molecules
+	Total multimolecules removed: 36
+	Final size after removing salts, charges and multimolecules: 4827
+--- REMOVING MOLECULAR WEIGHTS BETWEEN 20 AND 600 ---
+	Original size before molecular weight thresholding: 4827
+	Molecules below MW threshold 20: 1
+		O, odorless
+	Molecules above MW threshold 600: 11
+		CC1(C(=O)O)CCC2(C)CCC3(C)C(=CC(=O)C4C5(C)CCC(OC6OC(C(=O)O)C(O)C(O)C6OC6OC(C(=O)O)C(O)C(O)C6O)C(C)(C)C5CCC43C)C2C1, spicy
+		OCC1OC2OC3C(CO)OC(OC4C(CO)OC(OC5C(CO)OC(OC6C(CO)OC(OC7C(CO)OC(OC8C(CO)OC(OC1C(O)C2O)C(O)C8O)C(O)C7O)C(O)C6O)C(O)C5O)C(O)C4O)C(O)C3O, odorless
+		OCC1OC2OC3C(CO)OC(OC4C(CO)OC(OC5C(CO)OC(OC6C(CO)OC(OC7C(CO)OC(OC1C(O)C2O)C(O)C7O)C(O)C6O)C(O)C5O)C(O)C4O)C(O)C3O, odorless
+		COc1ccc(CCC(=O)c2c(O)cc(OC3OC(CO)C(O)C(O)C3OC3OC(C)C(O)C(O)C3O)cc2O)cc1O, odorless
+		OCC1OC2OC3C(CO)OC(OC4C(CO)OC(OC5C(CO)OC(OC6C(CO)OC(OC7C(CO)OC(OC8C(CO)OC(OC9C(CO)OC(OC1C(O)C2O)C(O)C9O)C(O)C8O)C(O)C7O)C(O)C6O)C(O)C5O)C(O)C4O)C(O)C3O, odorless
+		CC(C)(C)c1cc(CCC(=O)OCCNC(=O)C(=O)NCCOC(=O)CCc2cc(C(C)(C)C)c(O)c(C(C)(C)C)c2)cc(C(C)(C)C)c1O, dry, floral, fruity, green, woody
+		CC(=O)OCC1OC(OC2(COC(C)=O)OC(COC(C)=O)C(OC(C)=O)C2OC(C)=O)C(OC(C)=O)C(OC(C)=O)C1OC(C)=O, odorless
+		CCCCCCCCC=CCCCCCCCC(=O)OCCOCC(OCCO)C1OCC(OCCO)C1OCCO, alcoholic
+		OCC1OC2OCC3OC(OC4C(O)C(CO)OC(OCC5OC(OC(C1O)C2O)C(O)C(O)C5O)C4O)C(O)C(O)C3O, odorless
+		CC(C)CCCCCCCCCCCCCCC(=O)OCC(O)COCC(COC(=O)CCCCCCCCCCCCCCC(C)C)OC(=O)CCCCCCCCCCCCCCC(C)C, waxy
+		CCCCCCCCCCCCCCCCCC(=O)OCCOCC(OCCOC)C1OCC(OCCOC)C1OCCOC, alcoholic
+	Size after molecular weight thresholding: 4815
+--- REMOVING NON-CARBON MOLECULES ---
+	Original size before removing non-carbon molecules: 4815
+	Removing non-carbon molecule: [N-]=[N+]=O
+	Number of non-carbon molecules removed: 1
+	Size after removing non-carbon molecules: 4814
+--- COLUMN PROCESSING ---
+	gs-lf is a classification dataset. Cleaning columns
+--- REMOVING LOW COUNT COLUMNS ---
+	Length of original descriptor list before low count removal: 138
+	No columns are below count threshold 20
+	Length of original descriptor list after low count removal: 138
+--- LOWERCASING AND MERGING LABELS ---
+	Length of original descriptor list before lowercase and merge: 138
+	Length of descriptor list after lowercase and merge: 138
+--- REMOVING SMILES WITH NO LABELS ---
+	Length of original df before no label removal: 4814
+	Length of df after no label removal: 4814
+--- DATASET CLEANING COMPLETE ---
+	Final size of dataframe: 4814
