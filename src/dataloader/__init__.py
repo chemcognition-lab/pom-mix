@@ -1,3 +1,3 @@
-from .dataloader import DreamLoader, SplitLoader
+from .dataloader import DatasetLoader, SplitLoader
 
-__all__ = ["DreamLoader", "SplitLoader"]
+__all__ = ["DatasetLoader", "SplitLoader"]

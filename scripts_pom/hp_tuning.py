@@ -21,7 +21,7 @@ import torch.nn as nn
 from functools import partial
 
 # dataloader
-from dataloader import DreamLoader
+from dataloader import DatasetLoader
 
 # pom
 import pom.utils as utils
@@ -51,8 +51,8 @@ def get_split_file(dataset_name, test_size):
         split = np.load(fname)
         train_ind, test_ind = split['train_ind'], split['test_ind']
     else:
-        dl = DreamLoader()
-        dl.load_benchmark(dataset_name)
+        dl = DatasetLoader()
+        dl.load_dataset(dataset_name)
         num_dat = dl.get_dataset_specifications(dataset_name)['n_datapoints']
         labels = dl.labels
         train_ind, _, test_ind, _ = iterative_train_test_split(np.array(range(num_dat)).reshape(-1,1), 
@@ -157,8 +157,8 @@ if __name__ == '__main__':
     os.makedirs('optuna/', exist_ok=True)
 
     dname = 'gs-lf'
-    dl = DreamLoader()
-    dl.load_benchmark(dname)
+    dl = DatasetLoader()
+    dl.load_dataset(dname)
     dl.featurize('molecular_graphs', init_globals=True)
     data_specs = dl.get_dataset_specifications(dname)
     task = data_specs['task']

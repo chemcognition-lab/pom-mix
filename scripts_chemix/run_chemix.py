@@ -32,7 +32,7 @@ from torch_geometric.data import Batch
 from chemix import build_chemix, get_mixture_smiles
 from chemix.train import LOSS_MAP
 from chemix.utils import TORCH_METRIC_FUNCTIONS
-from dataloader import DreamLoader
+from dataloader import DatasetLoader
 from dataloader.representations.graph_utils import EDGE_DIM, NODE_DIM, from_smiles
 from pom.early_stop import EarlyStopping
 from pom.gnn.graphnets import GraphNets
@@ -77,16 +77,16 @@ if __name__ == '__main__':
         f.write(hp_mix.to_json(indent = 4))
 
     # training set
-    dl = DreamLoader()
-    dl.load_benchmark('competition_train_all')
+    dl = DatasetLoader()
+    dl.load_dataset('competition_train_all')
     dl.featurize('competition_smiles')
     graph_list, train_indices = get_mixture_smiles(dl.features, from_smiles)
     train_gr = Batch.from_data_list(graph_list).to(device)
     y_train = torch.tensor(dl.labels, dtype=torch.float32).to(device)
 
     # leaderboard set
-    dl_test = DreamLoader()
-    dl_test.load_benchmark('competition_leaderboard')
+    dl_test = DatasetLoader()
+    dl_test.load_dataset('competition_leaderboard')
     dl_test.featurize('competition_smiles')
     graph_list, test_indices = get_mixture_smiles(dl_test.features, from_smiles)
     test_gr = Batch.from_data_list(graph_list).to(device)
@@ -210,8 +210,8 @@ if __name__ == '__main__':
 
 
     ##### TEST #####
-    dl_test = DreamLoader()
-    dl_test.load_benchmark('competition_test')
+    dl_test = DatasetLoader()
+    dl_test.load_dataset('competition_test')
     dl_test.featurize('competition_smiles_test')    # this is only valid for testing set
     graph_list, test_indices = get_mixture_smiles(dl_test.features, from_smiles)
     test_gr = Batch.from_data_list(graph_list)

@@ -16,7 +16,7 @@ DATASET_DIR = current_dir.parents[1] / "datasets"
 print(DATASET_DIR)
 
 
-class DreamLoader:
+class DatasetLoader:
     """
     Loads and cleans up your data
     """
@@ -94,7 +94,7 @@ class DreamLoader:
         if validate:
             self.validate()
 
-    def load_benchmark(
+    def load_dataset(
         self,
         name: str,
         path=None,
