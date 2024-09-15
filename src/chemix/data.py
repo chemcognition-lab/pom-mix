@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 from typing import Callable, List, Union
 
-class DreamDataset(Dataset):
+class MixtureDataset(Dataset):
     def __init__(self, inputs, labels):
         super().__init__()
         self.inputs = inputs
@@ -35,7 +35,7 @@ def load_pickled_dataset(data_path, batch_size, num_workers, shuffle=False):
     X = torch.stack((torch.Tensor(X_1), torch.Tensor(X_2)), dim=-1)
     y = torch.Tensor(y)
 
-    dataset = DreamDataset(inputs=X, labels=y)
+    dataset = MixtureDataset(inputs=X, labels=y)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle)
 
     return dataset, dataloader

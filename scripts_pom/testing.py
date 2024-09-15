@@ -9,7 +9,7 @@ import seaborn
 
 from typing import List, Optional
 
-from dataloader import DreamLoader, SplitLoader
+from dataloader import DatasetLoader, SplitLoader
 
 from dataloader.representations import graph_utils
 from pom.data import GraphDataset
@@ -47,8 +47,8 @@ def get_embeddings_from_smiles(smi_list: List[str], file_path: str, gnn: Optiona
 
 if __name__ == '__main__':
 
-    dl = DreamLoader()
-    dl.load_benchmark('mixtures')
+    dl = DatasetLoader()
+    dl.load_dataset('mixtures')
     dl.featurize('smiles')
 
     sl = SplitLoader()
