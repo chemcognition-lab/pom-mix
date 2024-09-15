@@ -4,6 +4,8 @@ import json
 import torch
 from torchinfo import summary
 
+sys.path.append('/u/ctser/pom-mix/src')
+
 from chemix.model import build_chemix
 from chemix.data import load_pickled_dataset
 from chemix.train import train
@@ -27,14 +29,14 @@ def main(
     os.makedirs(root_dir, exist_ok=True)
 
     # Data
-    _, train_loader = load_pickled_dataset(
+    _, train_loader, _, aug_train_loader = load_pickled_dataset(
         os.path.join(config.data.data_path, config.data.train_data_folder),
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         shuffle=True,
     )
 
-    _, val_loader = load_pickled_dataset(
+    _, val_loader, _, aug_val_loader = load_pickled_dataset(
         os.path.join(config.data.data_path, config.data.val_data_folder),
         batch_size=config.batch_size,
         num_workers=config.num_workers,
