@@ -1,0 +1,51 @@
+chemix:
+
+  dropout_rate: 0.2
+  attention_type: "sigmoid"
+  mol_aggregation: "mean"
+  attn_num_heads: 8
+
+  # POM input
+  pom_input:
+    unk_token: -999
+    embed_dim: 196
+    num_mix: 2
+
+  # Mixture Net
+  mixture_net:
+    num_layers: 2 # Self-attention
+    embed_dim: 64
+    add_mlp: False
+
+  # Attention aggregation
+  attn_aggregation:
+    embed_dim: ${chemix.mixture_net.embed_dim}
+
+  # Regressor
+  regressor:
+    type: "scaled_cosine"
+    activation: "sigmoid"
+    output_dim: 1
+
+
+# Data
+data:
+  data_path: "/u/rajao/pom-mix/datasets/mixtures/pickled_dataset/random_split"
+  train_data_folder: "train"
+  val_data_folder: "test" 
+
+# Scheduler
+loss_type: "huber"
+optimizer_type: "adam"
+lr: 5e-4
+weight_decay: 0.00
+
+# Trainer
+seed: 42
+root_dir: "/u/rajao/search_chemix"
+num_workers: 4
+max_epochs: 1000
+batch_size: 500
+device: "cuda"
+early_stopping: True
+patience: 100

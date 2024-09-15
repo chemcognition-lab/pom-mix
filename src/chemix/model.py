@@ -14,6 +14,7 @@ import warnings
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 from . import types
 from .maths import masked_max, masked_mean, masked_min, masked_variance
@@ -98,22 +99,136 @@ class AddNorm(nn.Module):
         return self.norm(x1 + self.dropout(x2))
 
 
+class SigmoidalScaledDotProductAttention(nn.Module):
+    '''Sigmoidal Scaled Dot-Product Attention
+    cf. https://github.com/jadore801120/attention-is-all-you-need-pytorch/
+    '''
+
+    def __init__(self, temperature, attn_dropout=0.1):
+        super().__init__()
+        self.temperature = temperature
+        self.dropout = nn.Dropout(attn_dropout)
+
+    def forward(self, q, k, v, mask=None):
+
+        attn = torch.matmul(q / self.temperature, k.transpose(2, 3))
+
+        if mask is not None:
+            attn = attn.masked_fill(mask == 0, -1e9)
+
+        attn = self.dropout(F.sigmoid(attn))
+        output = torch.matmul(attn, v)
+
+        return output, attn
+
+
+class SigmoidalMultiHeadAttention(nn.Module):
+    ''' Sigmoidal Multi-Head Attention module
+    cf. https://github.com/jadore801120/attention-is-all-you-need-pytorch/
+    '''
+
+    def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
+        super().__init__()
+
+        self.n_head = n_head
+        self.d_k = d_k
+        self.d_v = d_v
+
+        self.w_qs = nn.Linear(d_model, n_head * d_k, bias=False)
+        self.w_ks = nn.Linear(d_model, n_head * d_k, bias=False)
+        self.w_vs = nn.Linear(d_model, n_head * d_v, bias=False)
+        self.fc = nn.Linear(n_head * d_v, d_model, bias=False)
+
+        self.attention = SigmoidalScaledDotProductAttention(temperature=d_k ** 0.5)
+
+        self.dropout = nn.Dropout(dropout)
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+
+
+    def forward(self, query, key, value, key_padding_mask=None, need_weights=False):
+
+        d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
+        sz_b, len_q, len_k, len_v = query.size(0), query.size(1), key.size(1), value.size(1)
+
+        residual = query
+
+        # Pass through the pre-attention projection: b x lq x (n*dv)
+        # Separate different heads: b x lq x n x dv
+        q = self.w_qs(query).view(sz_b, len_q, n_head, d_k)
+        k = self.w_ks(key).view(sz_b, len_k, n_head, d_k)
+        v = self.w_vs(value).view(sz_b, len_v, n_head, d_v)
+
+        # Transpose for attention dot product: b x n x lq x dv
+        q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)
+
+        batch_size = key_padding_mask.shape[0]
+        seq_len = key_padding_mask.shape[1]
+        key_padding_mask_expanded = key_padding_mask.view(batch_size, 1, 1, seq_len).expand(-1, self.n_head, -1, -1)
+
+        # if key_padding_mask is not None:
+        #     mask = key_padding_mask.unsqueeze(1)   # For head axis broadcasting.
+
+        # q, attn = self.attention(q, k, v, mask=mask)
+        q, attn = self.attention(q, k, v, mask=key_padding_mask_expanded)
+
+        # Transpose to move the head dimension back: b x lq x n x dv
+        # Combine the last two dimensions to concatenate all the heads together: b x lq x (n*dv)
+        q = q.transpose(1, 2).contiguous().view(sz_b, len_q, -1)
+        q = self.dropout(self.fc(q))
+        q += residual
+
+        q = self.layer_norm(q)
+
+        return q, attn
+
+
+def initialize_attention(
+    attention_type: str,
+    embed_dim: int,
+    num_heads: int,
+    dropout_rate: float,
+    ):
+
+    if attention_type == "standard":
+        return nn.MultiheadAttention(
+            embed_dim=embed_dim,
+            num_heads=num_heads,
+            dropout=dropout_rate,
+            batch_first=True,
+        )
+    elif attention_type == "sigmoidal":
+        return SigmoidalMultiHeadAttention(
+            n_head=num_heads,
+            d_model=embed_dim,
+            d_k=embed_dim,
+            d_v=embed_dim,
+            dropout=dropout_rate,
+        )
+
+
 class MolecularAttention(nn.Module):
     """Molecule-wise PE attention for a mixture."""
 
     def __init__(
         self,
+        attention_type: str,
         embed_dim: int,
         num_heads: int = 1,
         add_mlp: bool = False,
         dropout_rate: float = 0.0,
     ):
         super().__init__()
-        self.self_attn_layer = nn.MultiheadAttention(
+        # self.self_attn_layer = nn.MultiheadAttention(
+        #     embed_dim=embed_dim,
+        #     num_heads=num_heads,
+        #     dropout=dropout_rate,
+        #     batch_first=True,
+        # )
+        self.self_attn_layer = initialize_attention(
+            attention_type=attention_type,
             embed_dim=embed_dim,
             num_heads=num_heads,
-            dropout=dropout_rate,
-            batch_first=True,
+            dropout_rate=dropout_rate,
         )
         self.addnorm1 = AddNorm(embed_dim, dropout_rate)
         self.add_mlp = add_mlp
@@ -156,17 +271,24 @@ class MeanAggregation(nn.Module):
 class AttentionAggregation(nn.Module):
     def __init__(
         self,
+        attention_type: str,
         embed_dim: int,
         num_heads: int = 1,
         dropout_rate: float = 0.0,
     ):
         super().__init__()
 
-        self.cross_attn_layer = nn.MultiheadAttention(
+        # self.cross_attn_layer = nn.MultiheadAttention(
+        #     embed_dim=embed_dim,
+        #     num_heads=num_heads,
+        #     dropout=dropout_rate,
+        #     batch_first=True,
+        # )
+        self.cross_attn_layer = initialize_attention(
+            attention_type=attention_type,
             embed_dim=embed_dim,
             num_heads=num_heads,
-            dropout=dropout_rate,
-            batch_first=True,
+            dropout_rate=dropout_rate,
         )
         self.mean_agg = MeanAggregation()
 
@@ -388,6 +510,7 @@ def build_chemix(config):
         AggEnum.mean: MeanAggregation(),
         AggEnum.pna: PrincipalNeighborhoodAggregation(),
         AggEnum.attn: AttentionAggregation(
+            attention_type=config.attention_type,
             embed_dim=config.attn_aggregation.embed_dim,
             num_heads=config.attn_num_heads,
             dropout_rate=config.dropout_rate,
@@ -395,6 +518,7 @@ def build_chemix(config):
     }
 
     mixture_net = MixtureBlock(
+        attention_type=config.attention_type,
         num_layers=config.mixture_net.num_layers,
         embed_dim=config.mixture_net.embed_dim,
         num_heads=config.attn_num_heads,
