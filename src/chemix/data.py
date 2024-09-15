@@ -35,18 +35,8 @@ def load_pickled_dataset(data_path, batch_size, num_workers, shuffle=False, augm
     X = torch.stack((torch.Tensor(X_1), torch.Tensor(X_2)), dim=-1)
     y = torch.Tensor(y)
 
-    if False:
-        aug_X_1 = X.clone()
-        aug_X_2 = X.clone()
-
-        aug_X_1[:, :, :, 0] = X[:, :, :, 0]  # (X_1, X_1)
-        aug_X_1[:, :, :, 1] = X[:, :, :, 0]
-
-        aug_X_2[:, :, :, 0] = X[:, :, :, 1]  # (X_2, X_2)
-        aug_X_2[:, :, :, 1] = X[:, :, :, 1]
-    else:
-        aug_X_1 = torch.stack((torch.Tensor(X_1), torch.Tensor(X_1)), dim=-1)
-        aug_X_2 = torch.stack((torch.Tensor(X_2), torch.Tensor(X_2)), dim=-1)
+    aug_X_1 = torch.stack((torch.Tensor(X_1), torch.Tensor(X_1)), dim=-1)
+    aug_X_2 = torch.stack((torch.Tensor(X_2), torch.Tensor(X_2)), dim=-1)
 
     aug_X = torch.cat((aug_X_1, aug_X_2), dim=0)
     aug_y = torch.ones(aug_X.shape[0])
