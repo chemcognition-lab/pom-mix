@@ -24,7 +24,7 @@ class MixtureDataset(Dataset):
         return input_data, labels
 
 
-def load_pickled_dataset(data_path, batch_size, num_workers, shuffle=False):
+def load_pickled_dataset(data_path, batch_size, num_workers, shuffle=False, augment=False):
     with open(os.path.join(data_path, "x1.pkl"), "rb") as f:
         X_1 = pickle.load(f)
     with open(os.path.join(data_path, "x2.pkl"), "rb") as f:
@@ -35,10 +35,22 @@ def load_pickled_dataset(data_path, batch_size, num_workers, shuffle=False):
     X = torch.stack((torch.Tensor(X_1), torch.Tensor(X_2)), dim=-1)
     y = torch.Tensor(y)
 
+    aug_X_1 = torch.stack((torch.Tensor(X_1), torch.Tensor(X_1)), dim=-1)
+    aug_X_2 = torch.stack((torch.Tensor(X_2), torch.Tensor(X_2)), dim=-1)
+
+    aug_X = torch.cat((aug_X_1, aug_X_2), dim=0)
+    aug_y = torch.ones(aug_X.shape[0])
+
+    if augment == True:
+        X = torch.cat((X, aug_X), dim=0)
+        y = torch.cat((y, aug_y), dim=0)
+
     dataset = MixtureDataset(inputs=X, labels=y)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle)
+    aug_dataset = MixtureDataset(inputs=aug_X, labels=aug_y)
+    aug_dataloader = DataLoader(aug_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle)
 
-    return dataset, dataloader
+    return dataset, dataloader, aug_dataset, aug_dataloader
 
 def map_nested_list(nested_list, mapping_dict):
     def map_element(x):
