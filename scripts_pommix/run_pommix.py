@@ -32,7 +32,7 @@ from torch_geometric.data import Batch
 from chemix import build_chemix, get_mixture_smiles
 from chemix.train import LOSS_MAP
 from chemix.utils import TORCH_METRIC_FUNCTIONS
-from dataloader import DatasetLoader
+from dataloader import DatasetLoader, SplitLoader
 from dataloader.representations.graph_utils import EDGE_DIM, NODE_DIM, from_smiles
 from pom.early_stop import EarlyStopping
 from pom.gnn.graphnets import GraphNets
@@ -58,8 +58,8 @@ if __name__ == '__main__':
     os.makedirs(f'{fname}/', exist_ok=True)
 
     # path where the pretrained models are stored
-    embedder_path = f'../scripts_pom/general_models/model{FLAGS.trial}/'
-    chemix_path = f'chemix_weights_pearson/'
+    embedder_path = f'../scripts_pom/gs-lf_models/pretrained_pom/'
+    chemix_path = f'../scripts_mix/results/chemix_pearson/top1'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Running on: {device}')
@@ -71,26 +71,28 @@ if __name__ == '__main__':
     with open(f'{fname}/hparams_graphnets.json', 'w') as f:
         f.write(hp_gnn.to_json(indent = 4))
     
-    hp_mix = ConfigDict(json.load(open(f'{chemix_path}/hparams_chemix_{FLAGS.trial}.json', 'r')))
+    # hp_mix = ConfigDict(json.load(open(f'{chemix_path}/hparams_chemix_{FLAGS.trial}.json', 'r')))
+    hp_mix = ConfigDict(json.load(open(f'{chemix_path}/hparams_chemix_dulcet-sweep-123.json', 'r')))
     hp_mix.lr = FLAGS.mix_lr
     with open(f'{fname}/hparams_chemix.json', 'w') as f:
         f.write(hp_mix.to_json(indent = 4))
 
     # training set
     dl = DatasetLoader()
-    dl.load_dataset('competition_train_all')
-    dl.featurize('competition_smiles')
+    dl.load_dataset('mixtures')
+    dl.featurize('mix_smiles')
+
+    sl = SplitLoader("random_cv")
+    test_results = []
+    for id, train, val, test in sl.load_splits(dl.features, dl.labels):
+        import pdb; pdb.set_trace()
+        
+
+    import pdb; pdb.set_trace()
+
     graph_list, train_indices = get_mixture_smiles(dl.features, from_smiles)
     train_gr = Batch.from_data_list(graph_list).to(device)
     y_train = torch.tensor(dl.labels, dtype=torch.float32).to(device)
-
-    # leaderboard set
-    dl_test = DatasetLoader()
-    dl_test.load_dataset('competition_leaderboard')
-    dl_test.featurize('competition_smiles')
-    graph_list, test_indices = get_mixture_smiles(dl_test.features, from_smiles)
-    test_gr = Batch.from_data_list(graph_list).to(device)
-    y_test = torch.tensor(dl_test.labels, dtype=torch.float32).to(device)
 
     print(f'Training set: {len(y_train)}')
     print(f'Leaderboard set: {len(y_test)}')
