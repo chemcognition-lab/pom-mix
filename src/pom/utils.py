@@ -9,9 +9,6 @@ import random
 import json
 import numpy as np
 
-from .gnn import graph_utils, GraphNets
-from .data import GraphDataset
-
 
 def set_seed(seed: int = 42):
     print(f'Seed set to {seed}')

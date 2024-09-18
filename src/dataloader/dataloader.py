@@ -1,11 +1,16 @@
 import ast
-import os
+import os, sys
+sys.path.append('..')
+
+
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 
 import numpy as np
 import pandas as pd
 from rdkit.Chem import MolFromSmiles, MolToSmiles
+
+from pommix_utils import augment_mixture_pairs
 
 # Inspired by gauche DataLoader
 # https://github.com/leojklarner/gauche
@@ -16,11 +21,13 @@ DATASET_DIR = current_dir.parents[1] / "datasets"
 print(DATASET_DIR)
 
 
+
+
+
 class DatasetLoader:
     """
     Loads and cleans up your data
     """
-
     def __init__(self):
         self.features = None
         self.labels = None
@@ -50,6 +57,8 @@ class DatasetLoader:
                 },
             }
         )
+
+        self.is_mixture = False
 
     def get_dataset_names(self, valid_only: Optional[bool] = True) -> List[str]:
         names = []
@@ -116,6 +125,12 @@ class DatasetLoader:
             label_columns=self.datasets[name]["labels"],
             validate=self.datasets[name]["validate"],
         )
+
+        self.is_mixture = name == 'mixtures'
+        if self.is_mixture:
+            self.dataset_id = self.features[:,0]   # expose dataset id for splitting
+        else:
+            self.dataset_id = None
 
         if not self.datasets[name]["validate"]:
             print(
@@ -197,56 +212,41 @@ class DatasetLoader:
         )
 
         valid_representations = [
-            "graphein_molecular_graphs",
-            "pyg_molecular_graphs",
             "molecular_graphs",
             "morgan_fingerprints",
-            "rdkit2d_normalized_features",
+            "rdkit2d",
             "mordred_descriptors",
-            "smiles",
-            "competition_rdkit2d",
+            "mix_smiles",
+            "mix_rdkit2d",
+            "mix_pom_embeddings",
         ]
 
         if isinstance(representation, Callable):
             self.features = representation(self.features, **kwargs)
 
-        elif representation == "graphein_molecular_graphs":
-            from .representations.graphs import graphein_molecular_graphs
-
-            self.features = graphein_molecular_graphs(smiles=self.features, **kwargs)
-
-        elif representation == "pyg_molecular_graphs":
-            from .representations.graphs import pyg_molecular_graphs
-
-            self.features = pyg_molecular_graphs(smiles=self.features, **kwargs)
+        # elif representation == "pyg_molecular_graphs":
+        #     from .representations.graphs import pyg_molecular_graphs
+        #     self.features = pyg_molecular_graphs(smiles=self.features, **kwargs)
 
         elif representation == "molecular_graphs":
             from .representations.graphs import molecular_graphs
-
             self.features = molecular_graphs(smiles=self.features, **kwargs)
 
         elif representation == "morgan_fingerprints":
             from .representations.features import morgan_fingerprints
-
             self.features = morgan_fingerprints(self.features, **kwargs)
 
-        elif representation == "rdkit2d_normalized_features":
+        elif representation == "rdkit2d":
             from .representations.features import rdkit2d_normalized_features
-
             self.features = rdkit2d_normalized_features(self.features, **kwargs)
 
         elif representation == "mordred_descriptors":
             from .representations.features import mordred_descriptors
-
             self.features = mordred_descriptors(self.features, **kwargs)
 
-        elif representation == 'smiles':
-            paths = {
-                "smiles": "mixtures/mixture_smi_definitions_clean.csv",
-            }
-            path = paths[representation]
+        elif representation == 'mix_smiles':
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            smi_df = pd.read_csv(DATASET_DIR / path)
+            smi_df = pd.read_csv(DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv")
             smi_df = smi_df.set_index(["Dataset", "Mixture Label"])
             feature_list = np.empty(
                 (len(self.features), 2), dtype=object
@@ -258,88 +258,62 @@ class DatasetLoader:
                     feature_list[mixid, mi] = smiles_arr
             self.features = feature_list
 
-        elif representation == "smiles_augment":
+        elif representation == "mix_rdkit2d":
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            smi_df = pd.read_csv(
-                DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv"
-            )
+            rdkit_df = pd.read_csv(DATASET_DIR / f"mixtures/mixture_rdkit_definitions_clean.csv")
+
             feature_list = []
-            feature_list_augment = []
+            for feature in self.features:
+                mix_1 = rdkit_df.loc[
+                    (rdkit_df["Dataset"] == feature[0])
+                    & (rdkit_df["Mixture Label"] == feature[1])
+                ][rdkit_df.columns[2:]]
+                mix_1 = mix_1.dropna(axis=1).to_numpy()[0]
+                mix_2 = rdkit_df.loc[
+                    (rdkit_df["Dataset"] == feature[0])
+                    & (rdkit_df["Mixture Label"] == feature[2])
+                ][rdkit_df.columns[2:]]
+                mix_2 = mix_2.dropna(axis=1).to_numpy()[0]
+                feature_list.append(np.stack([mix_1, mix_2], axis=-1))
+
+            self.features = np.array(feature_list, dtype=object)
+
+        elif representation == "mix_pom_embeddings":
+            # Features is ["Dataset", "Mixture 1", "Mixture 2"]
+            smi_df = pd.read_csv(DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv")
+
+            # load the pom embeddings
+            # note that the rows correspond to each other
+            pom_embeds = np.load(DATASET_DIR / "mixtures/mixture_pom_embeddings.npz")['features']
+
+            feature_list = []
             for feature in self.features:
                 mix_1 = smi_df.loc[
                     (smi_df["Dataset"] == feature[0])
                     & (smi_df["Mixture Label"] == feature[1])
-                ][smi_df.columns[2:]]
-                mix_1 = mix_1.dropna(axis=1).to_numpy()[0]
+                ][smi_df.columns[2:]].index[0]
                 mix_2 = smi_df.loc[
                     (smi_df["Dataset"] == feature[0])
                     & (smi_df["Mixture Label"] == feature[2])
-                ][smi_df.columns[2:]]
-                mix_2 = mix_2.dropna(axis=1).to_numpy()[0]
-                feature_list.append([mix_1, mix_2])
-                feature_list_augment.append([mix_2, mix_1])
-            feature_list += feature_list_augment
+                ][smi_df.columns[2:]].index[0]
+                feature_list.append(np.stack([pom_embeds[mix_1], pom_embeds[mix_2]], axis=-1))
 
-            self.features = np.array(feature_list, dtype=object)
-            self.labels = np.concatenate([self.labels, self.labels])
-
-        elif representation == "competition_rdkit2d":
-            # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            rdkit_df = pd.read_csv(
-                f"{current_dir}/../datasets/competition_train/mixture_rdkit_definitions_clean.csv"
-            )
-            feature_list = []
-            for feature in self.features:
-                mix_1 = rdkit_df.loc[
-                    (rdkit_df["Dataset"] == feature[0])
-                    & (rdkit_df["Mixture Label"] == feature[1])
-                ][rdkit_df.columns[2:]]
-                mix_1 = mix_1.dropna(axis=1).to_numpy()[0]
-                mix_2 = rdkit_df.loc[
-                    (rdkit_df["Dataset"] == feature[0])
-                    & (rdkit_df["Mixture Label"] == feature[2])
-                ][rdkit_df.columns[2:]]
-                mix_2 = mix_2.dropna(axis=1).to_numpy()[0]
-                feature_list.append([mix_1, mix_2])
-
-            self.features = np.array(feature_list, dtype=object)
-
-        elif representation == "competition_rdkit2d_augment":
-            # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            rdkit_df = pd.read_csv(
-                f"{current_dir}/../datasets/competition_train/mixture_rdkit_definitions_clean.csv"
-            )
-            feature_list = []
-            feature_list_augment = []
-            for feature in self.features:
-                mix_1 = rdkit_df.loc[
-                    (rdkit_df["Dataset"] == feature[0])
-                    & (rdkit_df["Mixture Label"] == feature[1])
-                ][rdkit_df.columns[2:]]
-                mix_1 = mix_1.dropna(axis=1).to_numpy()[0]
-                mix_2 = rdkit_df.loc[
-                    (rdkit_df["Dataset"] == feature[0])
-                    & (rdkit_df["Mixture Label"] == feature[2])
-                ][rdkit_df.columns[2:]]
-                mix_2 = mix_2.dropna(axis=1).to_numpy()[0]
-                feature_list.append([mix_1, mix_2])
-                feature_list_augment.append([mix_2, mix_1])
-            feature_list += feature_list_augment
-            self.features = np.array(feature_list, dtype=object)
-            self.labels = np.concatenate([self.labels, self.labels])
-
-        elif representation == "only_augment":
-
-            feature_list_augment = np.array([[x[1], x[0]] for x in self.features])
-
-            self.features = np.vstack((self.features, feature_list_augment))
-
+            self.features = np.stack(feature_list, axis=0)
+            
         else:
             raise Exception(
                 f"The specified representation choice {representation} is not a valid option."
                 f"Choose between {valid_representations}."
             )
         
+    def augment(self):
+        if not self.is_mixture:
+            raise Exception("Can only augment mixtures dataset.")
+        self.features, self.labels = augment_mixture_pairs(self.features, self.labels)
+        feature_list_augment = np.array([np.stack([x[..., 1], x[..., 0]], axis=-1) for x in self.features])
+        self.features = np.vstack((self.features, feature_list_augment))
+        self.labels = np.concatenate([self.labels, self.labels])
+
 
 class SplitLoader:
     def __init__(self, split_set: str = "random_cv"):
@@ -363,7 +337,7 @@ class SplitLoader:
         for fname in sorted(split_dir.glob(f"{self.split_set}*.npz")):
             idx = np.load(fname)
             idxs.append((
-                idx['identifier'],
+                str(idx['identifier']),
                 (features[idx['training']], labels[idx['training']]), 
                 (features[idx['validation']], labels[idx['validation']]), 
                 (features[idx['testing']], labels[idx['testing']]), 
