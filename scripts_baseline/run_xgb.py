@@ -42,7 +42,7 @@ if __name__ == '__main__':
             val_features = val_features.reshape(len(val_features), -1)
             test_features = test_features.reshape(len(test_features), -1)
 
-            logger = {}
+            logger = {'pearson': -np.nan}
             for _ in range(100):
                 bst = XGBRegressor(n_estimators=1000, max_depth=1000, learning_rate=0.01, subsample=0.8, colsample_bytree=0.8,
                         early_stopping_rounds=20, eval_metric=mean_squared_error, n_jobs=24, verbosity=0)
@@ -53,7 +53,7 @@ if __name__ == '__main__':
                 # perform test
                 y_pred = bst.predict(test_features)
                 prs, _ = pearsonr(test_labels.flatten(), y_pred.flatten())
-
+                
                 if logger['pearson'] < prs:
                     logger['id'] = id
                     logger['y_pred'] = y_pred.tolist()
