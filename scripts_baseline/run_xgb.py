@@ -7,7 +7,7 @@ sys.path.append( str(base_dir / 'src/') )
 
 import seaborn as sns
 from dataloader import DatasetLoader, SplitLoader
-from pommix_utils import augment_mixture_pairs, pna
+from pommix_utils import permute_mixture_pairs, pna
 
 from xgboost import XGBRegressor
 from sklearn.metrics import root_mean_squared_error, mean_squared_error, r2_score
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     test_results = []
     for id, train, val, test in sl.load_splits(dl.features, dl.labels):
         train_features, train_labels = train
-        train_features, train_labels = augment_mixture_pairs(train_features, train_labels)
+        train_features, train_labels = permute_mixture_pairs(train_features, train_labels)
         val_features, val_labels = val
         test_features, test_labels = test
 

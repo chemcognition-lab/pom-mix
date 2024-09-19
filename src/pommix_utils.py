@@ -58,7 +58,7 @@ def create_tvt_split_indices(
     return train_ind, val_ind, test_ind
 
 
-def augment_mixture_pairs(features, labels):
+def permute_mixture_pairs(features, labels):
     """
     Augments the given mixture pairs by creating a new feature list and concatenating it with the original features, but permuted.
     Assumes that the last dimension is the dimension of mixtures pairs

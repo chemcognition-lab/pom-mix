@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 
-from pommix_utils import augment_mixture_pairs
+from pommix_utils import permute_mixture_pairs
 
 # Inspired by gauche DataLoader
 # https://github.com/leojklarner/gauche
@@ -309,10 +309,7 @@ class DatasetLoader:
     def augment(self):
         if not self.is_mixture:
             raise Exception("Can only augment mixtures dataset.")
-        self.features, self.labels = augment_mixture_pairs(self.features, self.labels)
-        feature_list_augment = np.array([np.stack([x[..., 1], x[..., 0]], axis=-1) for x in self.features])
-        self.features = np.vstack((self.features, feature_list_augment))
-        self.labels = np.concatenate([self.labels, self.labels])
+        self.features, self.labels = permute_mixture_pairs(self.features, self.labels)
 
 
 class SplitLoader:
