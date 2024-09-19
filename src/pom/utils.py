@@ -69,11 +69,6 @@ def split_into_batches(*tensors, q):
     
     n = tensors[0].size(0)
     num_batches = (n + q - 1) // q  # Ceiling division to handle cases where n is not divisible by q
-
-    # for tensor in tensors:
-    #     tensor = tensor.clone()
-    #     for i in range(num_batches):
-    #         tensor.narrow(0, i * q, min(q, n - i * q))
     
     return tuple(
         [tensor.clone().narrow(0, i * q, min(q, n - i * q)) for i in range(num_batches)]
