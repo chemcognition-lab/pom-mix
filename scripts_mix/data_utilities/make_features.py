@@ -16,9 +16,8 @@ sys.path.append( str(base_dir / 'src/') )
 
 import rdkit.Chem as Chem
 
-from pommix_utils import get_embeddings_from_smiles
+from pommix_utils import get_embeddings_from_smiles, pna
 from dataloader import DatasetLoader
-from dataloader.representations.utils import pna
 from dataloader.representations.features import rdkit2d_normalized_features
 
 
@@ -29,19 +28,18 @@ if __name__ == '__main__':
     df = df.set_index(['Dataset', 'Mixture Label'])
 
 
-    # # create PNA rdkit features
-    # features = []
-    # for i, row in df.iterrows():
-    #     row = row.dropna()
-    #     feat = pna(np.expand_dims(np.array(rdkit2d_normalized_features(row.tolist())), 0))
-    #     features.append(feat)
+    # create PNA rdkit features
+    features = []
+    for i, row in df.iterrows():
+        row = row.dropna()
+        feat = pna(np.expand_dims(np.array(rdkit2d_normalized_features(row.tolist())), 0))
+        features.append(feat)
+    features = np.concatenate(features)
 
-    # features = np.concatenate(features)
-
-    # # Create a new dataframe with the same indices as the original df, but only with the pna features
-    # feature_columns = [f'{i}' for i in range(features.shape[1])]
-    # features_df = pd.DataFrame(features, columns=feature_columns, index=df.index).reset_index()
-    # features_df.to_csv(DATASET_DIR / 'mixture_rdkit_definitions_clean.csv', index=False)
+    # Create a new dataframe with the same indices as the original df, but only with the pna features
+    feature_columns = [f'{i}' for i in range(features.shape[1])]
+    features_df = pd.DataFrame(features, columns=feature_columns, index=df.index).reset_index()
+    features_df.to_csv(DATASET_DIR / 'mixture_rdkit_definitions_clean.csv', index=False)
 
 
     # create POM embeddings
@@ -53,7 +51,6 @@ if __name__ == '__main__':
         emb = get_embeddings_from_smiles(row.tolist(), file_path=MODEL_PATH)
         mix_mat = np.pad(emb, ((0, max_pad_len - emb.shape[0]), (0, 0)), constant_values=-999)
         features.append(mix_mat)
-
     features = np.stack(features, axis=0)
 
     # note that the ordering of the pom embeddings are preserved
