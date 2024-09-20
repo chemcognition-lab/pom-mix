@@ -41,27 +41,23 @@ from pom.gnn.graphnets import GraphNets
 
 parser = ArgumentParser()
 parser.add_argument("--trial", action="store", type=int, default=1, help="Trial number.")
-parser.add_argument("--rep", action="store", type=int, default=None, help='Additional tag for each trial. Optional.')
 parser.add_argument("--no-verbose", action="store_true", default=False, help='Toggle the verbosity of training. Default False')
 parser.add_argument("--gnn-lr", action="store", type=float, default=1e-5, help='Learning rate for GNN POM embedder. Default 1e-5.')
 parser.add_argument("--mix-lr", action="store", type=float, default=5e-4, help='Learning rate for Chemix. Default 5e-4.')
 parser.add_argument("--gnn-freeze", action="store_true", default=False, help='Toggle freeze GNN POM weights. Default False')
-parser.add_argument("--test_run", action="store_true", default=False, help='Save results. Default False')
+parser.add_argument("--test_run", action="store_true", default=False, help='Save test results. Default False')
 
 FLAGS = parser.parse_args()
 np.set_printoptions(precision=3)
 
 if __name__ == '__main__':
     # create folder for results
-    if FLAGS.rep is not None:
-        fname = f'results/chemix_pearson/top{FLAGS.trial}/rep{FLAGS.rep}/'
-    else:
-        fname = f'results/chemix_pearson/top{FLAGS.trial}'
+    fname = f'results/chemix_pearson/top{FLAGS.trial}'
     os.makedirs(f'{fname}/', exist_ok=True)
 
     # path where the pretrained models are stored
     embedder_path = f'../scripts_pom/gs-lf_models/pretrained_pom/'
-    chemix_path = f'../scripts_mix/results/chemix_pearson/top1'
+    chemix_path = f'../scripts_chemix/results/chemix_pearson/top1'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Running on: {device}')
@@ -74,7 +70,7 @@ if __name__ == '__main__':
         f.write(hp_gnn.to_json(indent = 4))
     
     # hp_mix = ConfigDict(json.load(open(f'{chemix_path}/hparams_chemix_{FLAGS.trial}.json', 'r')))
-    hp_mix = ConfigDict(json.load(open(f'{chemix_path}/hparams_chemix_dulcet-sweep-123.json', 'r')))
+    hp_mix = ConfigDict(json.load(open(f'{chemix_path}/hparams_chemix_bias.json', 'r')))
     hp_mix.lr = FLAGS.mix_lr
     with open(f'{fname}/hparams_chemix.json', 'w') as f:
         f.write(hp_mix.to_json(indent = 4))
@@ -121,9 +117,8 @@ if __name__ == '__main__':
         # create the chemix model and load weights
         chemix = build_chemix(config=hp_mix.chemix)
         # chemix.load_state_dict(torch.load(f'{chemix_path}/best_model_dict_{FLAGS.trial}.pt', map_location=device))
-        chemix.load_state_dict(torch.load(f'{chemix_path}/best_model_dict_dulcet-sweep-123.pt', map_location=device))
+        chemix.load_state_dict(torch.load(f'{chemix_path}/best_model_dict_bias.pt', map_location=device))
         chemix = chemix.to(device=device)
-        # if not FLAGS.no_verbose: torchinfo.summary(chemix)
 
         # training params
         loss_fn = LOSS_MAP[hp_mix.loss_type]()
@@ -144,21 +139,26 @@ if __name__ == '__main__':
             if hp_gnn.freeze:
                 embedder.eval()
 
-            out = embedder.graphs_to_mixtures(train_gr, train_indices, device=device)
-            X_batches, Y_batches = split_into_batches(out, y_train, q=32)
-
-            total_loss = 0
             optimizer.zero_grad()
-            for b, t in zip(X_batches, Y_batches):
-                y_pred = chemix(b)
-                loss = loss_fn(y_pred, t)
-                total_loss = total_loss + loss
-            
-            total_loss /= len(Y_batches)
-            total_loss.backward()
+            out = embedder.graphs_to_mixtures(train_gr, train_indices, device=device)
+            y_pred = chemix(out)
+            loss = loss_fn(y_pred, y_train)
+            loss.backward()
             optimizer.step()
 
-            train_loss = total_loss.detach().cpu().item()
+            train_loss = loss.detach().cpu().item()
+
+            # X_batches, Y_batches = split_into_batches(out, y_train, q=32)
+            # total_loss = 0
+            # optimizer.zero_grad()
+            # for b, t in zip(X_batches, Y_batches):
+            #     y_pred = chemix(b)
+            #     loss = loss_fn(y_pred, t)
+            #     total_loss = total_loss + loss
+            # total_loss /= len(Y_batches)
+            # total_loss.backward()
+            # optimizer.step()
+            # train_loss = total_loss.detach().cpu().item()
             
             # validation + early stopping
             embedder.eval(); chemix.eval()
