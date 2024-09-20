@@ -19,6 +19,15 @@ import rdkit.Chem as Chem
 from pommix_utils import get_embeddings_from_smiles, pna
 from dataloader import DatasetLoader
 from dataloader.representations.features import rdkit2d_normalized_features
+from typing import Tuple, Optional
+import os
+import sys
+import random
+import seaborn as sns
+import pandas as pd
+import numpy as np
+import torch
+from pathlib import Path
 
 
 if __name__ == '__main__':
@@ -29,17 +38,33 @@ if __name__ == '__main__':
 
 
     # create PNA rdkit features
-    features = []
+    features, mean_features = [], []
     for i, row in df.iterrows():
         row = row.dropna()
-        feat = pna(np.expand_dims(np.array(rdkit2d_normalized_features(row.tolist())), 0))
-        features.append(feat)
+        rdkit_feat = np.expand_dims(np.array(rdkit2d_normalized_features(row.tolist())), 0)
+        features.append(pna(rdkit_feat))
+        mean_features.append(rdkit_feat.mean(1))
     features = np.concatenate(features)
+    mean_features = np.concatenate(mean_features)
 
-    # Create a new dataframe with the same indices as the original df, but only with the pna features
-    feature_columns = [f'{i}' for i in range(features.shape[1])]
-    features_df = pd.DataFrame(features, columns=feature_columns, index=df.index).reset_index()
-    features_df.to_csv(DATASET_DIR / 'mixture_rdkit_definitions_clean.csv', index=False)
+    # Create a new dataframe with the same indices as the original df, but only with the pna/mean features
+    pd.DataFrame(
+        features, 
+        columns=[f'{i}' for i in range(features.shape[1])], 
+        index=df.index
+    ).reset_index().to_csv(
+        DATASET_DIR / 'mixture_rdkit_definitions_clean.csv', 
+        index=False
+    )
+    
+    pd.DataFrame(
+        mean_features, 
+        columns=[f'{i}' for i in range(mean_features.shape[1])], 
+        index=df.index
+    ).reset_index().to_csv(
+        DATASET_DIR / 'mixture_rdkit_mean_definitions_clean.csv', 
+        index=False
+    )
 
 
     # create POM embeddings

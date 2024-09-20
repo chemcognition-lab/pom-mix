@@ -10,8 +10,6 @@ import numpy as np
 import pandas as pd
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 
-from pommix_utils import permute_mixture_pairs
-
 # Inspired by gauche DataLoader
 # https://github.com/leojklarner/gauche
 
@@ -258,9 +256,10 @@ class DatasetLoader:
                     feature_list[mixid, mi] = smiles_arr
             self.features = feature_list
 
-        elif representation == "mix_rdkit2d":
+        elif representation in ["mix_rdkit2d_pna", "mix_rdkit2d_mean"]:
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            rdkit_df = pd.read_csv(DATASET_DIR / f"mixtures/mixture_rdkit_definitions_clean.csv")
+            fname = f"mixtures/mixture_rdkit_definitions_clean.csv" if representation == "mix_rdkit2d_pna" else f"mixtures/mixture_rdkit_mean_definitions_clean.csv"
+            rdkit_df = pd.read_csv(DATASET_DIR / fname)
 
             feature_list = []
             for feature in self.features:
@@ -309,7 +308,9 @@ class DatasetLoader:
     def augment(self):
         if not self.is_mixture:
             raise Exception("Can only augment mixtures dataset.")
-        self.features, self.labels = permute_mixture_pairs(self.features, self.labels)
+        feature_list_augment = np.array([np.stack([x[..., 1], x[..., 0]], axis=-1) for x in self.features])
+        self.features = np.vstack((self.features, feature_list_augment))
+        self.labels = np.concatenate([self.labels, self.labels])
 
 
 class SplitLoader:
