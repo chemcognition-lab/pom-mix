@@ -112,10 +112,19 @@ def self_mixture_unity(features, labels):
         tuple: A tuple containing the augmented features and labels.
     """
     for mixture_dim in [0, 1]:
-        unique_mixtures = np.unique(features[..., mixture_dim], axis=0)
+        if features[0].dtype == 'O': # check if it is a series of smiles strings
+            unique_mixtures = np.array([])
+            seen = set()
+            for sub_array in features[..., mixture_dim]:
+                fset = frozenset(sub_array)
+                if fset not in seen:
+                    seen.add(fset)
+                    unique_mixtures = np.append(unique_mixtures, sub_array)
+        else:
+            unique_mixtures = np.unique(features[..., mixture_dim], axis=0)
         feature_list_augment = np.array([np.stack([x, x], axis=-1) for x in unique_mixtures])
         features = np.vstack((features, feature_list_augment))
-        labels = np.concatenate([labels, np.ones(len(unique_mixtures)).reshape(-1,1)])
+        labels = np.concatenate([labels, np.zeros((len(unique_mixtures), 1))])
     return features, labels
 
 

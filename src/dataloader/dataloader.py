@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 
-from pommix_utils import permute_mixture_pairs, self_mixture_unity
+from pommix_utils import permute_mixture_pairs, self_mixture_unity, single_molecule_mixture_gslf_jaccards
 
 # Inspired by gauche DataLoader
 # https://github.com/leojklarner/gauche
