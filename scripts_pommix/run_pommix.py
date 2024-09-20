@@ -34,6 +34,8 @@ from chemix.train import LOSS_MAP
 from chemix.utils import TORCH_METRIC_FUNCTIONS
 from dataloader import DatasetLoader, SplitLoader
 from dataloader.representations.graph_utils import EDGE_DIM, NODE_DIM, from_smiles
+
+from pom.utils import split_into_batches
 from pom.early_stop import EarlyStopping
 from pom.gnn.graphnets import GraphNets
 
@@ -82,169 +84,154 @@ if __name__ == '__main__':
     dl.load_dataset('mixtures')
     dl.featurize('mix_smiles')
 
+    # perform CV split
     sl = SplitLoader("random_cv")
     test_results = []
     for id, train, val, test in sl.load_splits(dl.features, dl.labels):
-        import pdb; pdb.set_trace()
-        
+        # gather the graphs for mixtures
+        train_features, train_labels = train
+        graph_list, train_indices = get_mixture_smiles(train_features, from_smiles)
+        train_gr = Batch.from_data_list(graph_list).to(device)
+        y_train = torch.tensor(train_labels, dtype=torch.float32).to(device)
 
-    import pdb; pdb.set_trace()
+        val_features, val_labels = val
+        graph_list, val_indices = get_mixture_smiles(val_features, from_smiles)
+        val_gr = Batch.from_data_list(graph_list).to(device)
+        y_val = torch.tensor(val_labels, dtype=torch.float32).to(device)
 
-    graph_list, train_indices = get_mixture_smiles(dl.features, from_smiles)
-    train_gr = Batch.from_data_list(graph_list).to(device)
-    y_train = torch.tensor(dl.labels, dtype=torch.float32).to(device)
+        test_features, test_labels = test
+        graph_list, test_indices = get_mixture_smiles(test_features, from_smiles)
+        test_gr = Batch.from_data_list(graph_list).to(device)
+        y_test = torch.tensor(test_labels, dtype=torch.float32).to(device)
 
-    print(f'Training set: {len(y_train)}')
-    print(f'Leaderboard set: {len(y_test)}')
+        print(f'Running split: {id}')
+        print(f'Training set: {len(y_train)}')
+        print(f'Validation set: {len(y_val)}')
+        print(f'Testing set: {len(y_test)}')
 
-    # create the pom embedder model and load weights
-    embedder = GraphNets(node_dim=NODE_DIM, edge_dim=EDGE_DIM, **hp_gnn)
-    embedder.load_state_dict(torch.load(f'{embedder_path}/gnn_embedder.pt'))
-    embedder = embedder.to(device)
-    # freeze pom if specified
-    if hp_gnn.freeze:
-        for p in embedder.parameters():
-            p.requires_grad = False
+        # load models
+        # create the pom embedder model and load weights
+        embedder = GraphNets(node_dim=NODE_DIM, edge_dim=EDGE_DIM, **hp_gnn)
+        embedder.load_state_dict(torch.load(f'{embedder_path}/gnn_embedder.pt'))
+        embedder = embedder.to(device)
+        if hp_gnn.freeze:                   # freeze pom if specified
+            for p in embedder.parameters():
+                p.requires_grad = False
 
-    # create the chemix model and load weights
-    chemix = build_chemix(config=hp_mix.chemix)
-    chemix.load_state_dict(torch.load(f'{chemix_path}/best_model_dict_{FLAGS.trial}.pt',
-                            map_location=device))
-    chemix = chemix.to(device=device)
-    if not FLAGS.no_verbose: torchinfo.summary(chemix)
+        # create the chemix model and load weights
+        chemix = build_chemix(config=hp_mix.chemix)
+        # chemix.load_state_dict(torch.load(f'{chemix_path}/best_model_dict_{FLAGS.trial}.pt', map_location=device))
+        chemix.load_state_dict(torch.load(f'{chemix_path}/best_model_dict_dulcet-sweep-123.pt', map_location=device))
+        chemix = chemix.to(device=device)
+        # if not FLAGS.no_verbose: torchinfo.summary(chemix)
 
-    loss_fn = LOSS_MAP[hp_mix.loss_type]()
-    metric_fn = F.pearson_corrcoef
-    optimizer = torch.optim.Adam(
-        [
-            {'params': embedder.parameters(), 'lr': hp_gnn.lr},
-            {'params': chemix.parameters(), 'lr': hp_mix.lr}
-        ])
-    num_epochs = 5000 if not FLAGS.test_run else 10
-    es = EarlyStopping(nn.ModuleList([embedder, chemix]), patience=1000, mode='maximize')
+        # training params
+        loss_fn = LOSS_MAP[hp_mix.loss_type]()
+        metric_fn = F.pearson_corrcoef
+        optimizer = torch.optim.Adam(
+            [
+                {'params': embedder.parameters(), 'lr': hp_gnn.lr},
+                {'params': chemix.parameters(), 'lr': hp_mix.lr}
+            ])
+        num_epochs = 5000 if not FLAGS.test_run else 10
+        es = EarlyStopping(nn.ModuleList([embedder, chemix]), patience=1000, mode='maximize')
 
-    log = {k: [] for k in ['epoch', 'train_loss', 'val_loss', 'val_metric']}
-    pbar = tqdm.tqdm(range(num_epochs), disable=FLAGS.no_verbose)
-    for epoch in pbar:
-        embedder.train(); chemix.train()
-        if hp_gnn.freeze:
-            embedder.eval()
+        # start training loop
+        log = {k: [] for k in ['epoch', 'train_loss', 'val_loss', 'val_metric']}
+        pbar = tqdm.tqdm(range(num_epochs), disable=FLAGS.no_verbose)
+        for epoch in pbar:
+            embedder.train(); chemix.train()
+            if hp_gnn.freeze:
+                embedder.eval()
 
-        optimizer.zero_grad()
-        out = embedder.graphs_to_mixtures(train_gr, train_indices, device=device)
-        y_pred = chemix(out)
-        loss = loss_fn(y_pred, y_train)
-        loss.backward()
-        optimizer.step()
+            out = embedder.graphs_to_mixtures(train_gr, train_indices, device=device)
+            X_batches, Y_batches = split_into_batches(out, y_train, q=32)
 
-        train_loss = loss.detach().cpu().item()
-        
-        # validation + early stopping
+            total_loss = 0
+            optimizer.zero_grad()
+            for b, t in zip(X_batches, Y_batches):
+                y_pred = chemix(b)
+                loss = loss_fn(y_pred, t)
+                total_loss = total_loss + loss
+            
+            total_loss /= len(Y_batches)
+            total_loss.backward()
+            optimizer.step()
+
+            train_loss = total_loss.detach().cpu().item()
+            
+            # validation + early stopping
+            embedder.eval(); chemix.eval()
+            with torch.no_grad():
+                out = embedder.graphs_to_mixtures(val_gr, val_indices, device=device)
+                y_pred = chemix(out)
+                loss = loss_fn(y_pred, y_val)
+                metric = metric_fn(y_pred.flatten(), y_val.flatten())
+                val_loss = loss.detach().cpu().item()
+                val_metric = metric.detach().cpu().item()
+
+            log['epoch'].append(epoch)
+            log['train_loss'].append(train_loss)
+            log['val_loss'].append(val_loss)
+            log['val_metric'].append(val_metric)
+
+            pbar.set_description(f"Train: {train_loss:.4f} | Val: {val_loss:.4f} | Val metric: {val_metric:.4f}")
+
+            stop = es.check_criteria(val_metric, nn.ModuleList([embedder, chemix]))
+            if stop:
+                print(f'Early stop reached at {es.best_step} with {es.best_value}')
+                break
+        log = pd.DataFrame(log)
+
+        # save model weights
+        best_model_dict = es.restore_best()
+        model = nn.ModuleList([embedder, chemix])
+        model.load_state_dict(best_model_dict)      # load the best one trained
+        if not FLAGS.test_run:
+            torch.save(model[0].state_dict(), f'{fname}/{id}_gnn_embedder.pt')
+            torch.save(model[1].state_dict(), f'{fname}/{id}_chemix.pt')
+
+
+        ##### TESTING #####
+        # save the results in a file
         embedder.eval(); chemix.eval()
         with torch.no_grad():
             out = embedder.graphs_to_mixtures(test_gr, test_indices, device=device)
             y_pred = chemix(out)
-            loss = loss_fn(y_pred, y_test)
-            metric = metric_fn(y_pred.flatten(), y_test.flatten())
-            test_loss = loss.detach().cpu().item()
-            test_metric = metric.detach().cpu().item()
-
-        log['epoch'].append(epoch)
-        log['train_loss'].append(train_loss)
-        log['val_loss'].append(test_loss)
-        log['val_metric'].append(test_metric)
-
-        pbar.set_description(f"Train: {train_loss:.4f} | Test: {test_loss:.4f} | Test metric: {test_metric:.4f}")
-
-        stop = es.check_criteria(test_metric, nn.ModuleList([embedder, chemix]))
-        if stop:
-            print(f'Early stop reached at {es.best_step} with {es.best_value}')
-            break
-    log = pd.DataFrame(log)
-
-    # save model weights
-    best_model_dict = es.restore_best()
-    model = nn.ModuleList([embedder, chemix])
-    model.load_state_dict(best_model_dict)      # load the best one trained
-    if not FLAGS.test_run:
-        torch.save(model[0].state_dict(), f'{fname}/gnn_embedder.pt')
-        torch.save(model[1].state_dict(), f'{fname}/chemix.pt')
-
-    ##### LEADERBOARD #####
-    # save the results in a file
-    embedder.eval(); chemix.eval()
-    with torch.no_grad():
-        out = embedder.graphs_to_mixtures(test_gr, test_indices, device=device)
-        y_pred = chemix(out)
     
-    # calculate a bunch of metrics on the results to compare
-    leaderboard_metrics = {}
-    for name, func in TORCH_METRIC_FUNCTIONS.items():
-        leaderboard_metrics[name] = func(y_pred.flatten(), y_test.flatten()).detach().cpu().item()
-    pprint(leaderboard_metrics)
-    leaderboard_metrics = pd.DataFrame(leaderboard_metrics, index=['metrics']).transpose()
-    if not FLAGS.test_run:
-        leaderboard_metrics.to_csv(f'{fname}/leaderboard_metrics.csv')
+        # calculate a bunch of metrics on the results to compare
+        leaderboard_metrics = {}
+        for name, func in TORCH_METRIC_FUNCTIONS.items():
+            leaderboard_metrics[name] = func(y_pred.flatten(), y_test.flatten()).detach().cpu().item()
+        print(leaderboard_metrics)
+        leaderboard_metrics = pd.DataFrame(leaderboard_metrics, index=['metrics']).transpose()
+        if not FLAGS.test_run:
+            leaderboard_metrics.to_csv(f'{fname}/{id}_test_metrics.csv')
 
-    y_pred = y_pred.detach().cpu().numpy().flatten()
-    y_test = y_test.detach().cpu().numpy().flatten()
-    leaderboard_predictions = pd.DataFrame({
-        'Predicted_Experimental_Values': y_pred, 
-        'Ground_Truth': y_test,
-        'MAE': np.abs(y_pred - y_test),
-    }, index=range(len(y_pred)))
-    if not FLAGS.test_run:
-        leaderboard_predictions.to_csv(f'{fname}/leaderboard_predictions.csv')
+        y_pred = y_pred.detach().cpu().numpy().flatten()
+        y_test = y_test.detach().cpu().numpy().flatten()
+        leaderboard_predictions = pd.DataFrame({
+            'Predicted_Experimental_Values': y_pred, 
+            'Ground_Truth': y_test,
+            'MAE': np.abs(y_pred - y_test),
+        }, index=range(len(y_pred)))
+        if not FLAGS.test_run:
+            leaderboard_predictions.to_csv(f'{fname}/{id}_test_predictions.csv')
 
-    # plot the predictions
-    ax = sns.scatterplot(data=leaderboard_predictions, x='Ground_Truth', y='Predicted_Experimental_Values')
-    ax.plot([0,1], [0,1], 'r--')
-    ax.set_xlim([0,1])
-    ax.set_ylim([0,1])
-    ax.annotate(''.join(f'{k}: {v["metrics"]:.4f}\n' for k, v in leaderboard_metrics.iterrows()).strip(),
-            xy=(0.05,0.7), xycoords='axes fraction',
-            # textcoords='offset points',
-            size=12,
-            bbox=dict(boxstyle="round", fc=(1.0, 0.7, 0.7), ec="none"))
-    if not FLAGS.test_run:
-        plt.savefig(f'{fname}/leaderboard_predictions.png', bbox_inches='tight')
-    plt.close()
-
-
-    ##### TEST #####
-    dl_test = DatasetLoader()
-    dl_test.load_dataset('competition_test')
-    dl_test.featurize('competition_smiles_test')    # this is only valid for testing set
-    graph_list, test_indices = get_mixture_smiles(dl_test.features, from_smiles)
-    test_gr = Batch.from_data_list(graph_list)
-
-    embedder.eval(); chemix.eval()
-    with torch.no_grad():
-        out = embedder.graphs_to_mixtures(test_gr, test_indices, device=device)
-        y_pred = chemix(out)
-    
-    y_pred = y_pred.detach().cpu().numpy().flatten()
-    test_predictions = pd.DataFrame({
-        'Predicted_Experimental_Values': y_pred, 
-    }, index=range(len(y_pred)))
-    if not FLAGS.test_run:
-        test_predictions.to_csv(f'{fname}/test_predictions.csv')
+        # plot the predictions
+        ax = sns.scatterplot(data=leaderboard_predictions, x='Ground_Truth', y='Predicted_Experimental_Values')
+        ax.plot([0,1], [0,1], 'r--')
+        ax.set_xlim([0,1])
+        ax.set_ylim([0,1])
+        ax.annotate(''.join(f'{k}: {v["metrics"]:.4f}\n' for k, v in leaderboard_metrics.iterrows()).strip(),
+                xy=(0.05,0.7), xycoords='axes fraction',
+                # textcoords='offset points',
+                size=12,
+                bbox=dict(boxstyle="round", fc=(1.0, 0.7, 0.7), ec="none"))
+        if not FLAGS.test_run:
+            plt.savefig(f'{fname}/{id}_test_predictions.png', bbox_inches='tight')
+        plt.close()
 
 
-    # PLOT DIAGNOSTICS
-    # also plot sand save the training loss (for diagnostics)
-    if not FLAGS.test_run:
-        log.to_csv(f'{fname}/training.csv', index=False)
-    plt_log = log[['epoch', 'val_metric']].melt(id_vars=['epoch'], var_name='set', value_name='metric')
-    sns.lineplot(data=plt_log, x='epoch', y='metric', hue='set', palette='colorblind') 
-    if not FLAGS.test_run:
-        plt.savefig(f'{fname}/metric.png', bbox_inches='tight')
-    plt.close()
-
-    plt_log = log[['epoch', 'train_loss', 'val_loss']].melt(id_vars=['epoch'], var_name='set', value_name='loss')
-    sns.lineplot(data=plt_log, x='epoch', y='loss', hue='set', palette='colorblind') 
-    if not FLAGS.test_run:
-        plt.savefig(f'{fname}/loss.png', bbox_inches='tight')
-    plt.close()
 
 

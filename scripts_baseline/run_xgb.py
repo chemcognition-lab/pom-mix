@@ -25,6 +25,7 @@ FLAGS = parser.parse_args()
 
 if __name__ == '__main__':
     feat_type = FLAGS.feat_type
+    print(f'Running {feat_type}')
     
     fname = f'xgb_{feat_type}'
     os.makedirs(fname, exist_ok=True)
@@ -58,19 +59,22 @@ if __name__ == '__main__':
         val_features = val_features.reshape(len(val_features), -1)
         test_features = test_features.reshape(len(test_features), -1)
 
-        logger = {'pearson': -np.nan}
-        for _ in range(100):
+        logger = {'val_pearson': -np.inf}
+        for _ in range(50):
             bst = XGBRegressor(n_estimators=1000, max_depth=1000, learning_rate=0.01, subsample=0.8, colsample_bytree=0.8,
-                    early_stopping_rounds=10, eval_metric=mean_squared_error, n_jobs=-1, verbosity=0)
+                    early_stopping_rounds=25, eval_metric=mean_squared_error, n_jobs=-1, verbosity=0)
 
             # fit
             bst.fit(train_features, train_labels, eval_set=[(val_features, val_labels)])
 
-            # perform test
-            y_pred = bst.predict(test_features)
-            prs, _ = pearsonr(test_labels.flatten(), y_pred.flatten())
+            # perform validation check
+            y_pred = bst.predict(val_features)
+            prs, _ = pearsonr(val_labels.flatten(), y_pred.flatten())
             
-            if logger['pearson'] < prs:
+            # if validation check is good, calculate results for test set
+            if logger['val_pearson'] < prs:
+                y_pred = bst.predict(test_features)
+                logger['val_pearson'] = prs
                 logger['id'] = id
                 logger['y_pred'] = y_pred.tolist()
                 logger['y_test'] = test_labels.flatten().tolist()
@@ -81,7 +85,4 @@ if __name__ == '__main__':
                 json.dump(logger, open(f'{fname}/model_{id}_stats.json', 'w'), indent=4)
                 bst.save_model(f'{fname}/model_{id}.json')
         
-        test_results.append(logger)
-
-    pd.DataFrame(test_results).to_pickle(f'{fname}/all_results.pkl')
 

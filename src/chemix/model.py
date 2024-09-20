@@ -114,7 +114,7 @@ class SigmoidalScaledDotProductAttention(nn.Module):
         attn = torch.matmul(q / self.temperature, k.transpose(2, 3))
 
         if mask is not None:
-            attn = attn.masked_fill(mask == 0, -1e9)
+            attn = attn.masked_fill(mask == UNK_TOKEN, -1e9)
 
         attn = self.dropout(F.sigmoid(attn))
         output = torch.matmul(attn, v)

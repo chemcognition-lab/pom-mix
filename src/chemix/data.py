@@ -52,6 +52,16 @@ def load_pickled_dataset(data_path, batch_size, num_workers, shuffle=False, augm
 
     return dataset, dataloader, aug_dataset, aug_dataloader
 
+def dataset_to_torch(X, y, batch_size, num_workers, shuffle=False):
+
+    X = torch.Tensor(X)
+    y = torch.Tensor(y).squeeze(1)
+
+    dataset = MixtureDataset(inputs=X, labels=y)
+    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle)
+
+    return dataset, dataloader
+
 def map_nested_list(nested_list, mapping_dict):
     def map_element(x):
         return mapping_dict.get(x, x)

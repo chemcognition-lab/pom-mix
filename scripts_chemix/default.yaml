@@ -1,7 +1,7 @@
 chemix:
 
   dropout_rate: 0.2
-  attention_type: "sigmoid"
+  attention_type: "sigmoidal"
   mol_aggregation: "mean"
   attn_num_heads: 8
 
