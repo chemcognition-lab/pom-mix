@@ -216,6 +216,7 @@ class DatasetLoader:
             "mordred_descriptors",
             "mix_smiles",
             "mix_rdkit2d",
+            "mix_rdkit2d_mean"
             "mix_pom_embeddings",
         ]
 
@@ -256,9 +257,9 @@ class DatasetLoader:
                     feature_list[mixid, mi] = smiles_arr
             self.features = feature_list
 
-        elif representation in ["mix_rdkit2d_pna", "mix_rdkit2d_mean"]:
+        elif representation in ["mix_rdkit2d", "mix_rdkit2d_mean"]:
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            fname = f"mixtures/mixture_rdkit_definitions_clean.csv" if representation == "mix_rdkit2d_pna" else f"mixtures/mixture_rdkit_mean_definitions_clean.csv"
+            fname = f"mixtures/mixture_rdkit_definitions_clean.csv" if representation == "mix_rdkit2d" else f"mixtures/mixture_rdkit_mean_definitions_clean.csv"
             rdkit_df = pd.read_csv(DATASET_DIR / fname)
 
             feature_list = []
