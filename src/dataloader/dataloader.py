@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 
+from pommix_utils import permute_mixture_pairs, self_mixture_unity, single_molecule_mixture_gslf_jaccards
+
 # Inspired by gauche DataLoader
 # https://github.com/leojklarner/gauche
 
@@ -306,12 +308,19 @@ class DatasetLoader:
                 f"Choose between {valid_representations}."
             )
         
-    def augment(self):
+    def augment(self, augment_type: str = None):
         if not self.is_mixture:
             raise Exception("Can only augment mixtures dataset.")
-        feature_list_augment = np.array([np.stack([x[..., 1], x[..., 0]], axis=-1) for x in self.features])
-        self.features = np.vstack((self.features, feature_list_augment))
-        self.labels = np.concatenate([self.labels, self.labels])
+        if not augment_type:
+            raise Exception("Must specify augment strategy: 'permute_mixture_pairs', 'self_mixture_unity', 'single_molecule_mixture_gslf_jaccards'")
+        if augment_type == 'permute_mixture_pairs':
+            self.features, self.labels = permute_mixture_pairs(self.features, self.labels)
+        elif augment_type == 'self_mixture_unity':
+            self.features, self.labels = self_mixture_unity(self.features, self.labels)
+        elif augment_type == 'single_molecule_mixture_gslf_jaccards':
+            self.features, self.labels = single_molecule_mixture_gslf_jaccards(self.features, self.labels)
+        else:
+            raise Exception("Augment strategy must be 'permute_mixture_pairs', 'self_mixture_unity', 'single_molecule_mixture_gslf_jaccards'")
 
 
 class SplitLoader:
