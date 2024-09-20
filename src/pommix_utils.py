@@ -99,3 +99,38 @@ def pna(feat):
             new_feat[i, :] = np.concatenate([x.mean(axis=0), var, x.max(axis=0), x.min(axis=0)])
         return new_feat
 
+def self_mixture_unity(features, labels):
+    """
+    Augments the given mixture pairs by enforcing that the existing mixtures' self distance is 1.
+    Assumes that the last dimension is the dimension of mixtures pairs
+    
+    Args:
+        features (ndarray): The original feature list.
+        labels (ndarray): The original label list.
+        
+    Returns:
+        tuple: A tuple containing the augmented features and labels.
+    """
+    for mixture_dim in [0, 1]:
+        unique_mixtures = np.unique(features[..., mixture_dim], axis=0)
+        feature_list_augment = np.array([np.stack([x, x], axis=-1) for x in unique_mixtures])
+        features = np.vstack((features, feature_list_augment))
+        labels = np.concatenate([labels, np.ones(len(unique_mixtures)).reshape(-1,1)])
+    return features, labels
+
+
+def single_molecule_mixture_gslf_jaccards(features, labels):
+    """
+    Augments the mixture dataset by creating single-molecule mixtures and artificially specifying 
+    GS-LF label Jaccard distances as mixture perceptual distances.
+    Assumes that the last dimension is the dimension of mixtures pairs
+    
+    Args:
+        features (ndarray): The original feature list.
+        labels (ndarray): The original label list.
+        
+    Returns:
+        tuple: A tuple containing the augmented features and labels.
+    """
+    raise NotImplementedError
+
