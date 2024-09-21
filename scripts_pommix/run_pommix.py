@@ -2,7 +2,7 @@
 
 Example usage:
 ```
-python run_chemix.py --test_run
+python run_pommix.py
 ```
 """
 import os
@@ -35,24 +35,24 @@ from chemix.utils import TORCH_METRIC_FUNCTIONS
 from dataloader import DatasetLoader, SplitLoader
 from dataloader.representations.graph_utils import EDGE_DIM, NODE_DIM, from_smiles
 
-from pom.utils import split_into_batches
+# from pom.utils import split_into_batches
 from pom.early_stop import EarlyStopping
 from pom.gnn.graphnets import GraphNets
 
 parser = ArgumentParser()
 parser.add_argument("--trial", action="store", type=int, default=1, help="Trial number.")
+parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components"])
 parser.add_argument("--no-verbose", action="store_true", default=False, help='Toggle the verbosity of training. Default False')
 parser.add_argument("--gnn-lr", action="store", type=float, default=1e-5, help='Learning rate for GNN POM embedder. Default 1e-5.')
 parser.add_argument("--mix-lr", action="store", type=float, default=5e-4, help='Learning rate for Chemix. Default 5e-4.')
 parser.add_argument("--gnn-freeze", action="store_true", default=False, help='Toggle freeze GNN POM weights. Default False')
-parser.add_argument("--test_run", action="store_true", default=False, help='Save test results. Default False')
 
 FLAGS = parser.parse_args()
 np.set_printoptions(precision=3)
 
 if __name__ == '__main__':
     # create folder for results
-    fname = f'results/chemix_pearson/top{FLAGS.trial}'
+    fname = f'results/{FLAGS.split}/top{FLAGS.trial}'
     os.makedirs(f'{fname}/', exist_ok=True)
 
     # path where the pretrained models are stored
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     dl.featurize('mix_smiles')
 
     # perform CV split
-    sl = SplitLoader("random_cv")
+    sl = SplitLoader(FLAGS.split)
     test_results = []
     for id, train, val, test in sl.load_splits(dl.features, dl.labels):
         # gather the graphs for mixtures
@@ -128,7 +128,7 @@ if __name__ == '__main__':
                 {'params': embedder.parameters(), 'lr': hp_gnn.lr},
                 {'params': chemix.parameters(), 'lr': hp_mix.lr}
             ])
-        num_epochs = 5000 if not FLAGS.test_run else 10
+        num_epochs = 5000
         es = EarlyStopping(nn.ModuleList([embedder, chemix]), patience=1000, mode='maximize')
 
         # start training loop
@@ -187,9 +187,8 @@ if __name__ == '__main__':
         best_model_dict = es.restore_best()
         model = nn.ModuleList([embedder, chemix])
         model.load_state_dict(best_model_dict)      # load the best one trained
-        if not FLAGS.test_run:
-            torch.save(model[0].state_dict(), f'{fname}/{id}_gnn_embedder.pt')
-            torch.save(model[1].state_dict(), f'{fname}/{id}_chemix.pt')
+        torch.save(model[0].state_dict(), f'{fname}/{id}_gnn_embedder.pt')
+        torch.save(model[1].state_dict(), f'{fname}/{id}_chemix.pt')
 
 
         ##### TESTING #####
@@ -205,8 +204,7 @@ if __name__ == '__main__':
             leaderboard_metrics[name] = func(y_pred.flatten(), y_test.flatten()).detach().cpu().item()
         print(leaderboard_metrics)
         leaderboard_metrics = pd.DataFrame(leaderboard_metrics, index=['metrics']).transpose()
-        if not FLAGS.test_run:
-            leaderboard_metrics.to_csv(f'{fname}/{id}_test_metrics.csv')
+        leaderboard_metrics.to_csv(f'{fname}/{id}_test_metrics.csv', index=False)
 
         y_pred = y_pred.detach().cpu().numpy().flatten()
         y_test = y_test.detach().cpu().numpy().flatten()
@@ -215,8 +213,7 @@ if __name__ == '__main__':
             'Ground_Truth': y_test,
             'MAE': np.abs(y_pred - y_test),
         }, index=range(len(y_pred)))
-        if not FLAGS.test_run:
-            leaderboard_predictions.to_csv(f'{fname}/{id}_test_predictions.csv')
+        leaderboard_predictions.to_csv(f'{fname}/{id}_test_predictions.csv', index=False)
 
         # plot the predictions
         ax = sns.scatterplot(data=leaderboard_predictions, x='Ground_Truth', y='Predicted_Experimental_Values')
@@ -228,8 +225,7 @@ if __name__ == '__main__':
                 # textcoords='offset points',
                 size=12,
                 bbox=dict(boxstyle="round", fc=(1.0, 0.7, 0.7), ec="none"))
-        if not FLAGS.test_run:
-            plt.savefig(f'{fname}/{id}_test_predictions.png', bbox_inches='tight')
+        plt.savefig(f'{fname}/{id}_test_predictions.png', bbox_inches='tight')
         plt.close()
 
 
