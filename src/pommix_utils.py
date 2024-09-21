@@ -58,23 +58,6 @@ def create_tvt_split_indices(
     return train_ind, val_ind, test_ind
 
 
-def permute_mixture_pairs(features, labels):
-    """
-    Augments the given mixture pairs by creating a new feature list and concatenating it with the original features, but permuted.
-    Assumes that the last dimension is the dimension of mixtures pairs
-    
-    Args:
-        features (ndarray): The original feature list.
-        labels (ndarray): The original label list.
-        
-    Returns:
-        tuple: A tuple containing the augmented features and labels.
-    """
-    feature_list_augment = np.array([np.stack([x[..., 1], x[..., 0]], axis=-1) for x in features])
-    features = np.vstack((features, feature_list_augment))
-    labels = np.concatenate([labels, labels])
-    return features, labels
-
 def pna(feat):
     """
     Input tensor of shape (n, m, d), where n is the number of samples, m is the number of features, and d is the dimesnion of features
@@ -99,47 +82,36 @@ def pna(feat):
             new_feat[i, :] = np.concatenate([x.mean(axis=0), var, x.max(axis=0), x.min(axis=0)])
         return new_feat
 
-def self_mixture_unity(features, labels):
-    """
-    Augments the given mixture pairs by enforcing that the existing mixtures' self distance is 1.
-    Assumes that the last dimension is the dimension of mixtures pairs
-    
-    Args:
-        features (ndarray): The original feature list.
-        labels (ndarray): The original label list.
-        
-    Returns:
-        tuple: A tuple containing the augmented features and labels.
-    """
-    for mixture_dim in [0, 1]:
-        if features[0].dtype == 'O': # check if it is a series of smiles strings
-            unique_mixtures = np.array([])
-            seen = set()
-            for sub_array in features[..., mixture_dim]:
-                fset = frozenset(sub_array)
-                if fset not in seen:
-                    seen.add(fset)
-                    unique_mixtures = np.append(unique_mixtures, sub_array)
-        else:
-            unique_mixtures = np.unique(features[..., mixture_dim], axis=0)
-        feature_list_augment = np.array([np.stack([x, x], axis=-1) for x in unique_mixtures])
-        features = np.vstack((features, feature_list_augment))
-        labels = np.concatenate([labels, np.zeros((len(unique_mixtures), 1))])
-    return features, labels
 
+def cast_float(x):
+    return x if isinstance(x, float) else x.item()
 
-def single_molecule_mixture_gslf_jaccards(features, labels):
+def bootstrap_ci(true_values, predictions, metric_fn, num_samples=1000, alpha=0.05):
     """
-    Augments the mixture dataset by creating single-molecule mixtures and artificially specifying 
-    GS-LF label Jaccard distances as mixture perceptual distances.
-    Assumes that the last dimension is the dimension of mixtures pairs
-    
+    Calculates a bootstrap confidence interval for a given metric.
+
     Args:
-        features (ndarray): The original feature list.
-        labels (ndarray): The original label list.
-        
+        true_values: True values of the target variable.
+        predictions: Predicted values.
+        metric: A function that takes true_values and predictions as input and returns a scalar metric.
+        num_samples: Number of bootstrap samples to generate.
+        alpha: Significance level for the confidence interval.
+
     Returns:
-        tuple: A tuple containing the augmented features and labels.
+        A tuple containing the lower and upper bounds of the confidence interval.
     """
-    raise NotImplementedError
+
+    n = len(true_values)
+    values = []
+    for _ in range(num_samples):
+        indices = np.random.randint(0, n, n)
+        bootstrap_true = true_values[indices]
+        bootstrap_pred = predictions[indices]
+        value = metric_fn(bootstrap_true, bootstrap_pred)
+        values.append(cast_float(value))
+    lower_bound = np.percentile(values, alpha / 2 * 100)
+    upper_bound = np.percentile(values, (1 - alpha / 2) * 100)
+
+    return lower_bound, upper_bound, values
+
 

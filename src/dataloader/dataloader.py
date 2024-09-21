@@ -7,10 +7,9 @@ from pathlib import Path
 from typing import Callable, List, Optional, Union
 
 import numpy as np
+import seaborn as sns
 import pandas as pd
 from rdkit.Chem import MolFromSmiles, MolToSmiles
-
-from pommix_utils import permute_mixture_pairs, self_mixture_unity, single_molecule_mixture_gslf_jaccards
 
 # Inspired by gauche DataLoader
 # https://github.com/leojklarner/gauche
@@ -19,9 +18,6 @@ current_dir = Path(__file__).parent
 DATASET_DIR = current_dir.parents[1] / "datasets"
 
 print(DATASET_DIR)
-
-
-
 
 
 class DatasetLoader:
@@ -314,18 +310,81 @@ class DatasetLoader:
         if not augment_type:
             raise Exception("Must specify augment strategy: 'permute_mixture_pairs', 'self_mixture_unity', 'single_molecule_mixture_gslf_jaccards'")
         if augment_type == 'permute_mixture_pairs':
-            self.features, self.labels = permute_mixture_pairs(self.features, self.labels)
+            self.features, self.labels = self.permute_mixture_pairs(self.features, self.labels)
         elif augment_type == 'self_mixture_unity':
-            self.features, self.labels = self_mixture_unity(self.features, self.labels)
+            self.features, self.labels = self.self_mixture_unity(self.features, self.labels)
         elif augment_type == 'single_molecule_mixture_gslf_jaccards':
-            self.features, self.labels = single_molecule_mixture_gslf_jaccards(self.features, self.labels)
+            self.features, self.labels = self.single_molecule_mixture_gslf_jaccards(self.features, self.labels)
         else:
             raise Exception("Augment strategy must be 'permute_mixture_pairs', 'self_mixture_unity', 'single_molecule_mixture_gslf_jaccards'")
+        
+    @staticmethod
+    def permute_mixture_pairs(features, labels):
+        """
+        Augments the given mixture pairs by creating a new feature list and concatenating it with the original features, but permuted.
+        Assumes that the last dimension is the dimension of mixtures pairs
+        
+        Args:
+            features (ndarray): The original feature list.
+            labels (ndarray): The original label list.
+            
+        Returns:
+            tuple: A tuple containing the augmented features and labels.
+        """
+        feature_list_augment = np.array([np.stack([x[..., 1], x[..., 0]], axis=-1) for x in features])
+        features = np.vstack((features, feature_list_augment))
+        labels = np.concatenate([labels, labels])
+        return features, labels
+    
+    @staticmethod
+    def self_mixture_unity(features, labels):
+        """
+        Augments the given mixture pairs by enforcing that the existing mixtures' self distance is 1.
+        Assumes that the last dimension is the dimension of mixtures pairs
+        
+        Args:
+            features (ndarray): The original feature list.
+            labels (ndarray): The original label list.
+            
+        Returns:
+            tuple: A tuple containing the augmented features and labels.
+        """
+        for mixture_dim in [0, 1]:
+            if features[0].dtype == 'O': # check if it is a series of smiles strings
+                unique_mixtures = np.array([])
+                seen = set()
+                for sub_array in features[..., mixture_dim]:
+                    fset = frozenset(sub_array)
+                    if fset not in seen:
+                        seen.add(fset)
+                        unique_mixtures = np.append(unique_mixtures, sub_array)
+            else:
+                unique_mixtures = np.unique(features[..., mixture_dim], axis=0)
+            feature_list_augment = np.array([np.stack([x, x], axis=-1) for x in unique_mixtures])
+            features = np.vstack((features, feature_list_augment))
+            labels = np.concatenate([labels, np.zeros((len(unique_mixtures), 1))])
+        return features, labels
+    
+    @staticmethod
+    def single_molecule_mixture_gslf_jaccards(features, labels):
+        """
+        Augments the mixture dataset by creating single-molecule mixtures and artificially specifying 
+        GS-LF label Jaccard distances as mixture perceptual distances.
+        Assumes that the last dimension is the dimension of mixtures pairs
+        
+        Args:
+            features (ndarray): The original feature list.
+            labels (ndarray): The original label list.
+            
+        Returns:
+            tuple: A tuple containing the augmented features and labels.
+        """
+        raise NotImplementedError
 
 
 class SplitLoader:
     def __init__(self, split_set: str = "random_cv"):
-        assert split_set in ["random_cv", "albate_components", "ablate_molecules"]
+        assert split_set in ["random_cv", "ablate_components", "ablate_molecules"]
         self.split_set = split_set
 
     def load_splits(self, features, labels):
