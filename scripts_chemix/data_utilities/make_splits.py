@@ -1,10 +1,16 @@
 from typing import Tuple, Optional
 
-import os
+import os, sys
 import random
 import seaborn as sns
 import pandas as pd
 import numpy as np
+
+from pathlib import Path
+script_dir = Path(__file__).parent
+base_dir = Path(*script_dir.parts[:-2])
+sys.path.append( str(base_dir / 'src/') )
+
 
 from pathlib import Path
 from collections import Counter
@@ -81,8 +87,8 @@ def create_molecule_identity_splits(
     return splits
 
 if __name__ == '__main__':
-    DATASET_DIR = Path('../datasets/')
-    OUTPUT_DIR = DATASET_DIR / 'mixtures/splits/'
+    DATASET_DIR = base_dir / Path(f'datasets/mixtures')
+    OUTPUT_DIR = DATASET_DIR / 'splits/'
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # set seed for split generation
@@ -91,7 +97,7 @@ if __name__ == '__main__':
 
     # stratified by dataset, to ensure even distribution of samples from each dataset
     # this gives 80/20 split for cross validation
-    df = pd.read_csv(DATASET_DIR / "mixtures/mixtures_combined.csv")
+    df = pd.read_csv(DATASET_DIR / "mixtures_combined.csv")
     dataset_id = df['Dataset'].values
     n_splits = 5
     train_val_frac = 1. - 1./n_splits   # gives 20 for test set
@@ -108,8 +114,8 @@ if __name__ == '__main__':
     # then further create a split from the training set to for validation
     dl = DatasetLoader()
     dl.load_dataset('mixtures')
-    dl.featurize('smiles')
-    for k in range(10, 50, 10):
+    dl.featurize('mix_smiles')
+    for k in [5, 7, 10, 15, 20, 25, 30, 40]:
         train_idx, valid_idx, test_idx = create_k_molecules_split(dl.features, k = k)
         np.savez(OUTPUT_DIR / f'ablate_components{k}.npz', identifier=f'k{k}', training=train_idx, validation=valid_idx, testing=test_idx)
 
@@ -117,7 +123,7 @@ if __name__ == '__main__':
     # certain molecules do not show up in the train set
     # these are decided based on analysis of frequency of molecules in each mixture
     features = np.array([np.concatenate(item) for item in dl.features], dtype=object)
-    all_splits = create_molecule_identity_splits(features)
+    all_splits = create_molecule_identity_splits(features, num_splits=8)
     for i, (train_idx, valid_idx, test_idx) in enumerate(all_splits):
         np.savez(OUTPUT_DIR / f'ablate_molecules{i}.npz', identifier=f'm{i}', training=train_idx, validation=valid_idx, testing=test_idx)
 
