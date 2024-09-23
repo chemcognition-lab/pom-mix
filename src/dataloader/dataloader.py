@@ -409,8 +409,17 @@ class DatasetLoader:
             jaccard_distances = np.append(jaccard_distances, jaccard_df.loc[pair[0], pair[1]])
         jaccard_distances = jaccard_distances.reshape(-1, 1)
 
-        actual_pairs = np.array([np.array([[pair[0]], [pair[1]]], dtype='object') for pair in actual_pairs])
-        features = np.append(features, actual_pairs, axis=0)
+        actual_pairs = np.array([np.array([[pair[0]], [pair[1]]], dtype='object') for pair in actual_pairs], dtype='object')
+        
+        # Stupid workaround for inhomogeneous third dimension of features
+        concatenated = np.empty((features.shape[0] + actual_pairs.shape[0], features.shape[1]), dtype='object')
+        concatenated[:features.shape[0], :] = features
+        for i in range(actual_pairs.shape[0]):
+                concatenated[features.shape[0] + i, 0] = actual_pairs[i, 0]
+                concatenated[features.shape[0] + i, 1] = actual_pairs[i, 1]
+
+        
+        features = concatenated
         labels = np.append(labels, jaccard_distances)
 
         return features, labels
