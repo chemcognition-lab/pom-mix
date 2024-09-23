@@ -3,12 +3,16 @@ import json
 import torch
 import wandb
 import copy
+import numpy as np
 import datetime
 
 from chemix.model import build_chemix
-from chemix.data import load_pickled_dataset
+from chemix.data import dataset_to_torch
 from chemix.train import train
+from dataloader import DatasetLoader
 from omegaconf import OmegaConf
+from sklearn.model_selection import train_test_split
+
 
 import collections.abc
 
@@ -43,15 +47,24 @@ def main(config):
     os.makedirs(root_dir, exist_ok=True)
 
     # Data
-    _, train_loader = load_pickled_dataset(
-        os.path.join(config.data.data_path, config.data.train_data_folder),
+    dl = DatasetLoader()
+    dl.load_dataset("mixtures")
+
+    train_idx, test_idx = train_test_split(np.arange(len(dl.features)), test_size=0.2, random_state=0, stratify=dl.dataset_id)
+
+    dl.featurize("mix_pom_embeddings")
+
+    _, train_loader = dataset_to_torch(
+        X=dl.features[train_idx],
+        y=dl.labels[train_idx],
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         shuffle=True,
     )
 
-    _, val_loader = load_pickled_dataset(
-        os.path.join(config.data.data_path, config.data.val_data_folder),
+    _, val_loader = dataset_to_torch(
+        X=dl.features[test_idx],
+        y=dl.labels[test_idx],
         batch_size=config.batch_size,
         num_workers=config.num_workers,
     )
