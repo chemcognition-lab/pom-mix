@@ -10,6 +10,8 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 from rdkit.Chem import MolFromSmiles, MolToSmiles
+import itertools
+from scipy.spatial.distance import pdist, squareform
 
 # Inspired by gauche DataLoader
 # https://github.com/leojklarner/gauche
@@ -379,7 +381,49 @@ class DatasetLoader:
         Returns:
             tuple: A tuple containing the augmented features and labels.
         """
-        raise NotImplementedError
+        if features[0].dtype != 'O': # check if it is a series of smiles strings
+            raise Exception("Single molecule Jaccard augmentation only works with SMILES strings.")
+        # Find unique molecules. Features has (n_mixtures, smiles_string, 2)
+        # Flatten features and np unique
+        unique_molecules = np.unique(np.concatenate(features.flatten(), axis=0))
+        # Create all possible pairs using itertools.combination
+        gslf_df = pd.read_csv(DATASET_DIR / "gs-lf/gs-lf_combined.csv")
+        gslf_df = gslf_df[gslf_df['IsomericSMILES'].isin(unique_molecules)]
+        gslf_df.drop(columns=['descriptors'], inplace=True)
+        gslf_smiles = gslf_df.iloc[:, 0]
+        gslf_labels = gslf_df.iloc[:, 1:]
+
+        # Calculate pairwise Jaccard distances
+        jaccard_distances = pdist(gslf_labels, metric='jaccard')
+
+        # Convert distance vector to square matrix
+        distance_matrix = squareform(jaccard_distances)
+
+        # Create a new dataframe with pairwise distances
+        jaccard_df = pd.DataFrame(distance_matrix, index=gslf_smiles, columns=gslf_smiles)
+
+        # Create all possible pairs using itertools.combination
+        actual_pairs = np.array(list(itertools.combinations(jaccard_df.columns, 2)))
+        jaccard_distances = np.array([])
+        for pair in actual_pairs:
+            jaccard_distances = np.append(jaccard_distances, jaccard_df.loc[pair[0], pair[1]])
+        jaccard_distances = jaccard_distances.reshape(-1, 1)
+
+        actual_pairs = np.array([np.array([[pair[0]], [pair[1]]], dtype='object') for pair in actual_pairs], dtype='object')
+        
+        # Stupid workaround for inhomogeneous third dimension of features
+        concatenated = np.empty((features.shape[0] + actual_pairs.shape[0], features.shape[1]), dtype='object')
+        concatenated[:features.shape[0], :] = features
+        for i in range(actual_pairs.shape[0]):
+                concatenated[features.shape[0] + i, 0] = actual_pairs[i, 0]
+                concatenated[features.shape[0] + i, 1] = actual_pairs[i, 1]
+
+        
+        features = concatenated
+        labels = np.append(labels, jaccard_distances)
+
+        return features, labels
+
 
 
 class SplitLoader:
