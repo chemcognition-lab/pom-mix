@@ -6,7 +6,11 @@ import numpy as np
 from torchinfo import summary
 from sklearn.model_selection import train_test_split
 
-sys.path.append('/u/ctser/pom-mix/src')
+from pathlib import Path
+
+script_dir = Path(__file__).parent
+base_dir = Path(*script_dir.parts[:-1])
+sys.path.append( str(base_dir / 'src/') )
 
 from chemix.model import build_chemix
 from chemix.data import load_pickled_dataset, dataset_to_torch
