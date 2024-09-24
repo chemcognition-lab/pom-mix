@@ -466,6 +466,15 @@ class ScaledCosineRegressor(nn.Module):
         self.scaler = nn.Linear(out_dim, out_dim)
         self.activation = ACTIVATION_MAP[act]()
 
+        # clamp the scalar, this is required since our distance metric is only defined in this range
+        self.scaler.bias.data = self.scaler.bias.data.clamp(min=0)
+        self.scaler.weight.data = self.scaler.weight.data.clamp(min=0)
+
+        with torch.no_grad():
+            self.scaler.weight = nn.Parameter(torch.ones_like(self.scaler.weight) * 0.5)
+            self.scaler.bias = nn.Parameter(torch.ones_like(self.scaler.bias) * 0.5)
+
+
     def forward(self, x):
         cos_dist = self.cosine_distance(x)
         return self.activation(self.scaler(cos_dist))
