@@ -7,7 +7,6 @@ sys.path.append(str(base_dir / "src/"))
 
 import seaborn as sns
 from dataloader.dataloader import DatasetLoader, SplitLoader
-from pommix_utils import permute_mixture_pairs, pna
 from similarity_model.model import AngleSimilarityModel
 
 from xgboost import XGBRegressor
@@ -72,10 +71,9 @@ if __name__ == "__main__":
         test_labels = test_labels.astype(float)
 
         best_rmse = np.inf
-        select_n = pd.read_csv(f"../{"random_select_n_features_angle_sim_step1_mix_rdkit2d_mean"}/select_n_{id}.csv")
-        # find lowest RMSE_avg - RMSE_std from select_n
-        lowest_rmse = select_n["rmse_avg"] - select_n["rmse_std"]
-        n_features = select_n.loc[lowest_rmse.idxmin()]["nth_feature"]
+        with open(f"./{"random_select_n_features_angle_sim_step1_mix_rdkit2d_mean"}/model_{id}_stats.json") as json_file:
+            select_n = json.load(json_file)
+        n_features = select_n["n_best"]
         # iterate through features
         for n in range(0, 200):
             best_n_results[n] = {}
