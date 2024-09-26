@@ -25,7 +25,7 @@ parser.add_argument("--split", action="store", type=str, default="ablate_compone
 FLAGS = parser.parse_args()
 
 if __name__ == '__main__':
-    DATA_DIR = Path(f'results/{FLAGS.split}/top1')
+    DATA_DIR = Path(f'results/{FLAGS.split}/model')
 
     # training set
     dl = DatasetLoader()
