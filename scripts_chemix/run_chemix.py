@@ -41,7 +41,7 @@ from pom.gnn.graphnets import GraphNets
 
 parser = ArgumentParser()
 parser.add_argument("--run-name", action="store", type=str, default="model", help="Name of run, defaults to `model`.")
-parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components"])
+parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components", "lso_molecules"])
 parser.add_argument("--batch-size", action="store", type=int, default=128, help='Batch size for training.')
 parser.add_argument("--augment", action="store_false", default=False, help="Toggle augmenting the training set.")
 parser.add_argument("--pom-path", action="store", default=base_dir / "scripts_pom/gs-lf_models/pretrained_pom", 
@@ -49,6 +49,7 @@ parser.add_argument("--pom-path", action="store", default=base_dir / "scripts_po
 parser.add_argument("--chemix-path", action="store", default=base_dir / "scripts_chemix/results/pretrained_mixture", 
                     help="Path where chemix model parameter and weights are found.")
 parser.add_argument("--no-verbose", action="store_true", default=False, help='Toggle the verbosity of training. Default False')
+parser.add_argument("--no-bias", action="store_true", default=False, help='Turn off the bias in final linear layer. Default False')
 parser.add_argument("--mix-lr", action="store", type=float, default=1e-4, help='Learning rate for Chemix.')
 
 FLAGS = parser.parse_args()
@@ -63,6 +64,7 @@ if __name__ == '__main__':
     pom_path = Path(FLAGS.pom_path)
     chemix_path = Path(FLAGS.chemix_path)
     batch_size = FLAGS.batch_size
+    no_bias = FLAGS.no_bias
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Running on: {device}')
@@ -104,6 +106,7 @@ if __name__ == '__main__':
 
         # load models
         # create the chemix model
+        hp_mix.chemix.regressor.no_bias = no_bias
         chemix = build_chemix(config=hp_mix.chemix)
         chemix = chemix.to(device)
 
