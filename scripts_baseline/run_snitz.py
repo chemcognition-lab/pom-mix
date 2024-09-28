@@ -7,7 +7,6 @@ sys.path.append(str(base_dir / "src/"))
 
 import seaborn as sns
 from dataloader.dataloader import DatasetLoader, SplitLoader
-from pommix_utils import permute_mixture_pairs, pna
 
 from xgboost import XGBRegressor
 from sklearn.metrics import root_mean_squared_error, mean_squared_error, r2_score
@@ -32,7 +31,13 @@ FLAGS = parser.parse_args()
 
 
 def angle_similarity(a, b):
-    return torch.acos(torch.nn.functional.cosine_similarity(a, b))
+    return torch.acos(
+        torch.clamp(
+            torch.nn.functional.cosine_similarity(a, b, eps=1e-8),
+            min=-1 + 1e-8,
+            max=1 - 1e-8,
+        )
+    )
 
 
 if __name__ == "__main__":

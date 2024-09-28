@@ -428,7 +428,7 @@ class DatasetLoader:
 
 class SplitLoader:
     def __init__(self, split_set: str = "random_cv"):
-        assert split_set in ["random_cv", "ablate_components", "ablate_molecules"]
+        assert split_set in ["random_cv", "ablate_components", "ablate_molecules", "lso_molecules"]
         self.split_set = split_set
 
     def load_splits(self, features, labels):

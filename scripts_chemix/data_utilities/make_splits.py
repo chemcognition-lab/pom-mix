@@ -20,13 +20,24 @@ from dataloader import DatasetLoader
 
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
+
+
 def calculate_inner_lengths(row):
     return [len(inner_arr) for inner_arr in row]
 
-def create_k_molecules_split(features: np.ndarray, k: int, valid_percent: Optional[float] = 0.1) -> Tuple[list[int], list[int], list[int]]:
+def create_k_molecules_split(
+        features: np.ndarray, k: int, valid_percent: Optional[float] = 0.1
+    ) -> Tuple[list[int], list[int], list[int]]:
     """
-    splits dataset into mixtures that are <= k and mixtures that have > k molecules (testing)
-    further create a validation split from the training set
+    Ablation splits of dataset into mixtures that are <= k and mixtures that have > k molecules (testing).
+
+    Parameters:
+    features (np.ndarray): Array of features where each row represents a mixture.
+    k (int): Maximum number of molecules in a mixture for it to be included in the training set.
+    valid_percent (Optional[float]): Percentage of the training data to use for validation. Default is 0.1.
+
+    Returns:
+    Tuple[list[int], list[int], list[int]]: A tuple containing lists of indices for the training, validation, and test sets.
     """
 
     # get mixture lengths
@@ -49,6 +60,20 @@ def find_closest_index(value, arr):
 def create_molecule_identity_splits(
         mixture_smiles: np.ndarray, num_splits: Optional[int] = 5, valid_percent: Optional[float] = 0.1,
     ) -> Tuple[list[int], list[int], list[int]]:
+    """
+    Create ablation splits of the dataset based on the exclusion of specific molecules, ensuring that certain molecules do not appear in the training set.
+
+    Parameters:
+    mixture_smiles (np.ndarray): Array of molecule mixtures, where each mixture is a list of SMILES strings.
+    num_splits (Optional[int]): Number of splits to create. Default is 5.
+    valid_percent (Optional[float]): Percentage of the data to use for validation. Default is 0.1.
+
+    Returns:
+    Tuple[list[int], list[int], list[int]]: A tuple containing lists of indices for the training, validation, and test sets for each split.
+    """
+    # Flatten the mixture smiles, since we care only about identity of molecules found in any mixture
+    mixture_smiles = np.array([np.concatenate(item) for item in mixture_smiles], dtype=object)
+
     # Flatten the list of lists and count the frequency of each string
     all_indices = list(range(mixture_smiles.shape[0]))
     all_strings = np.concatenate(mixture_smiles.ravel())
@@ -86,6 +111,71 @@ def create_molecule_identity_splits(
     
     return splits
 
+
+def create_lso_molecule_identity_splits(
+    mixture_smiles: np.ndarray, num_splits: Optional[int] = 5, valid_percent: Optional[float] = 0.1, tolerance: Optional[float] = 0.005,
+    ) -> Tuple[list[int], list[int], list[int]]:
+    """
+    Create "Leave Some Out" (lso) splits of the dataset based on the exclusion of specific molecules, ensuring that certain molecules do 
+    not appear in the training set.
+
+    Parameters:
+    mixture_smiles (np.ndarray): Array of molecule mixtures, where each mixture is a list of SMILES strings.
+    num_splits (Optional[int]): Number of splits to create. Default is 5.
+    valid_percent (Optional[float]): Percentage of the data to use for validation. Default is 0.1.
+    tolerance (Optional[float]): Tolerance for the size of the test set. Default is 0.005.
+
+    Returns:
+    Tuple[list[int], list[int], list[int]]: A tuple containing lists of indices for the training, validation, and test sets for each split.
+    """
+    # Flatten the mixture smiles, since we care only about identity of molecules found in any mixture
+    mixture_smiles = np.array([np.concatenate(item) for item in mixture_smiles], dtype=object)
+
+    # Determine the size of splits
+    test_percent = 1./num_splits
+    train_percent = 1.0 - test_percent - valid_percent
+    N = len(mixture_smiles)
+
+    # Flatten the list of lists and count the frequency of each string
+    all_indices = list(range(mixture_smiles.shape[0]))
+    all_strings = np.concatenate(mixture_smiles.ravel())
+
+    # incrementally 
+    splits, smiles_removed = [], []
+    for i in range(num_splits):
+        while True:
+            excluded_mixtures, excluded_smiles = [], []
+            sample_strings = all_strings.tolist().copy()
+            remaining_mixtures = mixture_smiles.tolist().copy()
+            while len(excluded_mixtures)/N < test_percent - tolerance:
+                # select a smiles for exclusion
+                smi = np.random.choice(sample_strings, size=1)[0]
+                excluded_smiles.append(smi)
+                excluded_mixtures.extend([arr for arr in remaining_mixtures if smi in arr])
+                sample_strings.remove(smi)     # remove it so it won't be sampled again
+                remaining_mixtures = [arr for arr in remaining_mixtures if not any(np.array_equal(arr, excl) for excl in excluded_mixtures)]  # remove arrays that have been added to excluded_mixtures
+                assert len(remaining_mixtures + excluded_mixtures) == N, 'List of excluded and remaining not adding up to full dataset.'
+
+                if len(excluded_mixtures)/N > test_percent + tolerance:
+                    print('Too many excluded sets. Reset.')
+                    break
+                
+            if (len(excluded_mixtures) / N >= test_percent - tolerance and 
+                len(excluded_mixtures) / N <= test_percent + tolerance and 
+                excluded_smiles not in smiles_removed):
+                # For each array of strings in remaining_mixtures, get the indices as seen inside of mixture_smiles
+                remaining_indices = [all_indices[j] for j, sublist in enumerate(mixture_smiles) if any(np.array_equal(sublist, rem) for rem in remaining_mixtures)]
+                test_indices = [all_indices[j] for j, sublist in enumerate(mixture_smiles) if any(np.array_equal(sublist, excl) for excl in excluded_mixtures)]
+
+                # perform a split on the remaining indices, which makes up the train and val set
+                train_indices, valid_indices = train_test_split(remaining_indices, test_size=valid_percent/(train_percent + valid_percent))
+                splits.append((train_indices, valid_indices, test_indices))
+                smiles_removed.append(excluded_smiles)
+                print(f'Complete split {i}.')
+                break
+    
+    return splits, smiles_removed
+
 if __name__ == '__main__':
     DATASET_DIR = base_dir / Path(f'datasets/mixtures')
     OUTPUT_DIR = DATASET_DIR / 'splits/'
@@ -115,17 +205,24 @@ if __name__ == '__main__':
     dl = DatasetLoader()
     dl.load_dataset('mixtures')
     dl.featurize('mix_smiles')
-    for k in [5, 7, 10, 15, 20, 25, 30, 40]:
+    for k in [5, 7, 8, 9, 10, 17, 20, 27, 30, 40]:
         train_idx, valid_idx, test_idx = create_k_molecules_split(dl.features, k = k)
         np.savez(OUTPUT_DIR / f'ablate_components{k}.npz', identifier=f'k{k}', training=train_idx, validation=valid_idx, testing=test_idx)
 
     # generate molecule ablation data splits
     # certain molecules do not show up in the train set
     # these are decided based on analysis of frequency of molecules in each mixture
-    features = np.array([np.concatenate(item) for item in dl.features], dtype=object)
-    all_splits = create_molecule_identity_splits(features, num_splits=8)
+    all_splits = create_molecule_identity_splits(dl.features, num_splits=8)
     for i, (train_idx, valid_idx, test_idx) in enumerate(all_splits):
         np.savez(OUTPUT_DIR / f'ablate_molecules{i}.npz', identifier=f'm{i}', training=train_idx, validation=valid_idx, testing=test_idx)
+
+    all_splits, removed_smiles = create_lso_molecule_identity_splits(dl.features, num_splits=5)
+    print(f'Here are the smiles that are only found in test set: {removed_smiles}')
+    for i, (train_idx, valid_idx, test_idx) in enumerate(all_splits):
+        np.savez(OUTPUT_DIR / f'lso_molecules{i}.npz', identifier=f'lso{i}', training=train_idx, validation=valid_idx, testing=test_idx, 
+                 removed_smiles=np.array(removed_smiles, dtype=object))
+
+
 
 
     

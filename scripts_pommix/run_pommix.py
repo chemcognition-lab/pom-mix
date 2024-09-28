@@ -23,7 +23,6 @@ import pandas as pd
 import seaborn as sns
 import torch
 import torch.nn as nn
-import torchinfo
 import torchmetrics.functional as F
 import tqdm
 from ml_collections import ConfigDict
@@ -40,40 +39,52 @@ from pom.early_stop import EarlyStopping
 from pom.gnn.graphnets import GraphNets
 
 parser = ArgumentParser()
-parser.add_argument("--trial", action="store", type=int, default=1, help="Trial number.")
-parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components"])
-parser.add_argument("--no-verbose", action="store_true", default=False, help='Toggle the verbosity of training. Default False')
-parser.add_argument("--gnn-lr", action="store", type=float, default=1e-5, help='Learning rate for GNN POM embedder. Default 1e-5.')
-parser.add_argument("--mix-lr", action="store", type=float, default=5e-4, help='Learning rate for Chemix. Default 5e-4.')
+parser.add_argument("--run-name", action="store", type=str, default="model", help="Name of run, defaults to `model`.")
+parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components", "lso_molecules"])
+parser.add_argument("--pom-path", action="store", default=base_dir / "scripts_pom/gs-lf_models/pretrained_pom", 
+                    help="Path where POM model parameter and weights are found.")
+parser.add_argument("--chemix-path", action="store", default=base_dir / "scripts_chemix/results", 
+                    help="Path where chemix model parameter and weights are found.")
+parser.add_argument("--random-chemix", action="store_false", default=True, help='Toggle the loading of chemix. Default True. Otherwise start training from random.')
 parser.add_argument("--gnn-freeze", action="store_true", default=False, help='Toggle freeze GNN POM weights. Default False')
+parser.add_argument("--no-verbose", action="store_true", default=False, help='Toggle the verbosity of training. Default False')
+parser.add_argument("--no-bias", action="store_true", default=False, help='Turn off the bias in final linear layer. Default False')
+parser.add_argument("--gnn-lr", action="store", type=float, default=1e-5, help='Learning rate for GNN POM embedder. ')
+parser.add_argument("--mix-lr", action="store", type=float, default=1e-4, help='Learning rate for Chemix.')
 
 FLAGS = parser.parse_args()
 np.set_printoptions(precision=3)
 
 if __name__ == '__main__':
     # create folder for results
-    fname = f'results/{FLAGS.split}/top{FLAGS.trial}'
+    fname = Path(f'results/{FLAGS.split}/{FLAGS.run_name}')
     os.makedirs(f'{fname}/', exist_ok=True)
 
     # path where the pretrained models are stored
-    embedder_path = f'../scripts_pom/gs-lf_models/pretrained_pom/'
-    chemix_path = f'../scripts_chemix/results/chemix_pearson/top1'
+    pom_path = Path(FLAGS.pom_path)
+    chemix_path = Path(FLAGS.chemix_path) / FLAGS.split
+    chemix_path = chemix_path / "model" if not FLAGS.no_bias else chemix_path / "model_no_bias"
+    random_chemix = FLAGS.random_chemix
+    no_bias = FLAGS.no_bias
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Running on: {device}')
 
     # extract hyperparameters and save again in the folder
-    hp_gnn = ConfigDict(json.load(open(f'{embedder_path}/hparams.json', 'r')))
+    hp_gnn = ConfigDict(json.load(open(pom_path / 'hparams.json', 'r')))
     hp_gnn.lr = FLAGS.gnn_lr
     hp_gnn.freeze = FLAGS.gnn_freeze
-    with open(f'{fname}/hparams_graphnets.json', 'w') as f:
+    with open(fname / 'hparams_graphnets.json', 'w') as f:
         f.write(hp_gnn.to_json(indent = 4))
     
-    # hp_mix = ConfigDict(json.load(open(f'{chemix_path}/hparams_chemix_{FLAGS.trial}.json', 'r')))
-    hp_mix = ConfigDict(json.load(open(f'{chemix_path}/hparams_chemix_bias.json', 'r')))
+    hp_mix = ConfigDict(json.load(open(chemix_path / f'hparams_chemix.json', 'r')))
     hp_mix.lr = FLAGS.mix_lr
-    with open(f'{fname}/hparams_chemix.json', 'w') as f:
+    hp_mix.chemix.regressor.no_bias = no_bias
+    with open(fname / 'hparams_chemix.json', 'w') as f:
         f.write(hp_mix.to_json(indent = 4))
+
+    print(f'Mix lr: {hp_mix.lr} \t POM lr: {hp_gnn.lr} \t Frozen: {hp_gnn.freeze}')
+    print(f'Turn off Chemix bias: {hp_mix.chemix.regressor.no_bias}')
 
     # training set
     dl = DatasetLoader()
@@ -108,7 +119,7 @@ if __name__ == '__main__':
         # load models
         # create the pom embedder model and load weights
         embedder = GraphNets(node_dim=NODE_DIM, edge_dim=EDGE_DIM, **hp_gnn)
-        embedder.load_state_dict(torch.load(f'{embedder_path}/gnn_embedder.pt'))
+        embedder.load_state_dict(torch.load(pom_path / 'gnn_embedder.pt'))
         embedder = embedder.to(device)
         if hp_gnn.freeze:                   # freeze pom if specified
             for p in embedder.parameters():
@@ -116,9 +127,10 @@ if __name__ == '__main__':
 
         # create the chemix model and load weights
         chemix = build_chemix(config=hp_mix.chemix)
-        # chemix.load_state_dict(torch.load(f'{chemix_path}/best_model_dict_{FLAGS.trial}.pt', map_location=device))
-        chemix.load_state_dict(torch.load(f'{chemix_path}/best_model_dict_bias.pt', map_location=device))
-        chemix = chemix.to(device=device)
+        if not random_chemix:
+            print('Load chemix weights')
+            chemix.load_state_dict(torch.load(chemix_path / f'{id}_chemix.pt'))
+        chemix = chemix.to(device)
 
         # training params
         loss_fn = LOSS_MAP[hp_mix.loss_type]()
@@ -147,7 +159,8 @@ if __name__ == '__main__':
             optimizer.step()
 
             train_loss = loss.detach().cpu().item()
-
+            
+            # batching, not implemented
             # X_batches, Y_batches = split_into_batches(out, y_train, q=32)
             # total_loss = 0
             # optimizer.zero_grad()
@@ -187,8 +200,8 @@ if __name__ == '__main__':
         best_model_dict = es.restore_best()
         model = nn.ModuleList([embedder, chemix])
         model.load_state_dict(best_model_dict)      # load the best one trained
-        torch.save(model[0].state_dict(), f'{fname}/{id}_gnn_embedder.pt')
-        torch.save(model[1].state_dict(), f'{fname}/{id}_chemix.pt')
+        torch.save(model[0].state_dict(), fname / f'{id}_gnn_embedder.pt')
+        torch.save(model[1].state_dict(), fname / f'{id}_chemix.pt')
 
 
         ##### TESTING #####
@@ -199,33 +212,33 @@ if __name__ == '__main__':
             y_pred = chemix(out)
     
         # calculate a bunch of metrics on the results to compare
-        leaderboard_metrics = {}
+        test_metrics = {}
         for name, func in TORCH_METRIC_FUNCTIONS.items():
-            leaderboard_metrics[name] = func(y_pred.flatten(), y_test.flatten()).detach().cpu().item()
-        print(leaderboard_metrics)
-        leaderboard_metrics = pd.DataFrame(leaderboard_metrics, index=['metrics']).transpose()
-        leaderboard_metrics.to_csv(f'{fname}/{id}_test_metrics.csv', index=False)
+            test_metrics[name] = func(y_pred.flatten(), y_test.flatten()).detach().cpu().item()
+        print(test_metrics)
+        test_metrics = pd.DataFrame(test_metrics, index=['metrics']).transpose()
+        test_metrics.to_csv(fname / f'{id}_test_metrics.csv')
 
         y_pred = y_pred.detach().cpu().numpy().flatten()
         y_test = y_test.detach().cpu().numpy().flatten()
-        leaderboard_predictions = pd.DataFrame({
+        test_predictions = pd.DataFrame({
             'Predicted_Experimental_Values': y_pred, 
             'Ground_Truth': y_test,
             'MAE': np.abs(y_pred - y_test),
         }, index=range(len(y_pred)))
-        leaderboard_predictions.to_csv(f'{fname}/{id}_test_predictions.csv', index=False)
+        test_predictions.to_csv(fname / f'{id}_test_predictions.csv', index=False)
 
         # plot the predictions
-        ax = sns.scatterplot(data=leaderboard_predictions, x='Ground_Truth', y='Predicted_Experimental_Values')
+        ax = sns.scatterplot(data=test_predictions, x='Ground_Truth', y='Predicted_Experimental_Values')
         ax.plot([0,1], [0,1], 'r--')
         ax.set_xlim([0,1])
         ax.set_ylim([0,1])
-        ax.annotate(''.join(f'{k}: {v["metrics"]:.4f}\n' for k, v in leaderboard_metrics.iterrows()).strip(),
-                xy=(0.05,0.7), xycoords='axes fraction',
+        ax.annotate(''.join(f'{k}: {v["metrics"]:.4f}\n' for k, v in test_metrics.iterrows()).strip(),
+                xy=(0.05,0.8), xycoords='axes fraction',
                 # textcoords='offset points',
                 size=12,
                 bbox=dict(boxstyle="round", fc=(1.0, 0.7, 0.7), ec="none"))
-        plt.savefig(f'{fname}/{id}_test_predictions.png', bbox_inches='tight')
+        plt.savefig(fname / f'{id}_test_predictions.png', bbox_inches='tight')
         plt.close()
 
 
