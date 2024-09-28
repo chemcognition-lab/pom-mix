@@ -3,7 +3,8 @@ import sys
 from pathlib import Path
 
 script_dir = Path(__file__).parent
-sys.path.append( str('src/') )
+base_dir = Path(*script_dir.parts[:-1])
+sys.path.append( str(base_dir / 'src/') )
 
 from pommix_utils import bootstrap_ci
 from chemix.utils import TORCH_METRIC_FUNCTIONS
@@ -36,11 +37,11 @@ if __name__ == '__main__':
 
     for filename, tag in zip(
         [   
-            'scripts_baseline/best_features_angle_sim_step3_mix_rdkit2d_mean',
-            'scripts_baseline/xgb_rdkit2d',
-            'scripts_baseline/xgb_pom_embeddings',
-            'scripts_chemix/results/random_cv/model',
-            'scripts_pommix/results/random_cv/model',
+            base_dir / 'scripts_baseline/snitz_cosine_similarity',
+            base_dir / 'scripts_baseline/xgb_rdkit2d',
+            base_dir / 'scripts_baseline/xgb_pom_embeddings',
+            base_dir / 'scripts_chemix/results/random_cv/model',
+            base_dir / 'scripts_pommix/results/random_cv/model',
         ], 
         model_order
     ):
@@ -50,7 +51,7 @@ if __name__ == '__main__':
         for key, metric_fn in TORCH_METRIC_FUNCTIONS.items():
             tmp = []
             for i in range(5):
-                pred_fname = filename + f'/cv{i}_test_predictions.csv'
+                pred_fname = filename / f'cv{i}_test_predictions.csv'
 
                 df = pd.read_csv(pred_fname)
                 y_true = torch.from_numpy(df['Predicted_Experimental_Values'].to_numpy(np.float32))
@@ -139,14 +140,18 @@ if __name__ == '__main__':
     all_df = []
     samples_df = []
     model_order = [
+        'CheMix CV',
+        'CheMix LMO',
         'POM-Mix CV',
         'POM-Mix LMO']
 
     for split, filename, tag in zip(
-        ['cv', 'lso'],
+        ['cv', 'lso', 'cv', 'lso'],
         [   
-            'scripts_pommix/results/random_cv/model',
-            'scripts_pommix/results/lso_molecules/model',
+            base_dir / 'scripts_chemix/results/random_cv/model',
+            base_dir / 'scripts_chemix/results/lso_molecules/model',
+            base_dir / 'scripts_pommix/results/random_cv/model',
+            base_dir / 'scripts_pommix/results/lso_molecules/model',
         ], 
         model_order
     ):
@@ -155,7 +160,7 @@ if __name__ == '__main__':
         for key, metric_fn in TORCH_METRIC_FUNCTIONS.items():
             tmp = []
             for i in range(5):
-                pred_fname = filename + f'/{split}{i}_test_predictions.csv'
+                pred_fname = filename / f'{split}{i}_test_predictions.csv'
 
                 df = pd.read_csv(pred_fname)
                 y_true = torch.from_numpy(df['Predicted_Experimental_Values'].to_numpy(np.float32))
