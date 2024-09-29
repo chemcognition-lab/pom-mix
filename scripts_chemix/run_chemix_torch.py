@@ -6,10 +6,8 @@ import numpy as np
 from torchinfo import summary
 from sklearn.model_selection import train_test_split
 
-sys.path.append('/u/ctser/pom-mix/src')
-
 from chemix.model import build_chemix
-from chemix.data import load_pickled_dataset, dataset_to_torch
+from chemix.data import dataset_to_torch
 from chemix.train import train
 from dataloader import DatasetLoader
 from torchtune.utils.metric_logging import WandBLogger
@@ -61,7 +59,8 @@ def main(
 
     # Save hyper parameters
     with open(f'{root_dir}/hparams_chemix_{experiment_name}.json', 'w') as f:
-        f.write(json.dumps(OmegaConf.to_container(config.chemix, resolve=True)))
+        # f.write(json.dumps(OmegaConf.to_container(config.chemix, resolve=True)))
+        f.write(json.dumps(OmegaConf.to_container(config, resolve=True)))
 
     # Training
     train(
