@@ -26,7 +26,7 @@ def calculate_inner_lengths(row):
     return [len(inner_arr) for inner_arr in row]
 
 def create_k_molecules_split(
-        features: np.ndarray, k: int, valid_percent: Optional[float] = 0.1
+        features: np.ndarray, k: int, valid_percent: Optional[float] = 0.1, geometric: Optional[bool] = False,
     ) -> Tuple[list[int], list[int], list[int]]:
     """
     Ablation splits of dataset into mixtures that are <= k and mixtures that have > k molecules (testing).
@@ -35,14 +35,18 @@ def create_k_molecules_split(
     features (np.ndarray): Array of features where each row represents a mixture.
     k (int): Maximum number of molecules in a mixture for it to be included in the training set.
     valid_percent (Optional[float]): Percentage of the training data to use for validation. Default is 0.1.
+    geometric (Optional[bool]): Whether to use a geometric mean for the mixture length. Default is False.
 
     Returns:
     Tuple[list[int], list[int], list[int]]: A tuple containing lists of indices for the training, validation, and test sets.
     """
 
     # get mixture lengths
-    mixture_lengths = np.array([calculate_inner_lengths(row) for row in features])
-    mask = np.all(mixture_lengths <= k, axis=1)
+    if geometric:
+        mixture_lengths = np.array([np.sqrt(np.prod(calculate_inner_lengths(row))) for row in features]).reshape(-1,1)
+    else:
+        mixture_lengths = np.array([calculate_inner_lengths(row) for row in features])
+    mask = np.all(mixture_lengths <= k, axis=-1)
     train_indices = np.where(mask)[0]
     test_indices = np.where(~mask)[0]
     
@@ -184,11 +188,15 @@ if __name__ == '__main__':
     # set seed for split generation
     seed = 0
     utils.set_seed(seed)
+    df = pd.read_csv(DATASET_DIR / "mixtures_combined.csv")
+    dataset_id = df['Dataset'].values
+
+    # basic train/val 80/20 split for hparam tuning and embedding visualization
+    train_idx, test_idx = train_test_split(list(range(len(df))), test_size=0.2, random_state=seed, stratify=dataset_id)
+    np.savez(OUTPUT_DIR / f"random_train_val.npz", identifier=f'random_train_val', training=train_idx, validation=test_idx, testing=test_idx)
 
     # stratified by dataset, to ensure even distribution of samples from each dataset
     # this gives 80/20 split for cross validation
-    df = pd.read_csv(DATASET_DIR / "mixtures_combined.csv")
-    dataset_id = df['Dataset'].values
     n_splits = 5
     train_val_frac = 1. - 1./n_splits   # gives 20 for test set
     train_frac = 0.7/train_val_frac     # get 70/10 of total for train/val sets
@@ -205,8 +213,9 @@ if __name__ == '__main__':
     dl = DatasetLoader()
     dl.load_dataset('mixtures')
     dl.featurize('mix_smiles')
-    for k in [5, 7, 8, 9, 10, 17, 20, 27, 30, 40]:
-        train_idx, valid_idx, test_idx = create_k_molecules_split(dl.features, k = k)
+    for k in [7, 8, 9, 10, 13, 18, 20, 27, 30, 40]:
+        train_idx, valid_idx, test_idx = create_k_molecules_split(dl.features, k = k, geometric=True)
+        print(f'For k {k}: {len(train_idx) / len(dl.features)}')
         np.savez(OUTPUT_DIR / f'ablate_components{k}.npz', identifier=f'k{k}', training=train_idx, validation=valid_idx, testing=test_idx)
 
     # generate molecule ablation data splits

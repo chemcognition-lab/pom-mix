@@ -20,14 +20,6 @@ from pommix_utils import get_embeddings_from_smiles, pna
 from dataloader import DatasetLoader
 from dataloader.representations.features import rdkit2d_normalized_features
 from typing import Tuple, Optional
-import os
-import sys
-import random
-import seaborn as sns
-import pandas as pd
-import numpy as np
-import torch
-from pathlib import Path
 
 
 if __name__ == '__main__':
