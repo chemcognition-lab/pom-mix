@@ -460,11 +460,18 @@ class ScaledCosineRegressor(nn.Module):
     Sigmoid is to restrict the output to [0, 1].
     """
 
-    def __init__(self, out_dim: int, act: ActivationEnum):
+    def __init__(self, out_dim: int, act: ActivationEnum, no_bias: bool = False):
         super().__init__()
         self.cosine_distance = CosineRegressor()
-        self.scaler = nn.Linear(out_dim, out_dim)
+        self.scaler = nn.Linear(out_dim, out_dim, bias = not no_bias)
         self.activation = ACTIVATION_MAP[act]()
+
+        # clamp the scalar, this is required since our distance metric is only defined in this range
+        with torch.no_grad():
+            self.scaler.weight.clamp_(min=0)
+            for p in self.scaler.parameters():
+                p.copy_(nn.Parameter(torch.ones_like(p) * 0.5))
+
 
     def forward(self, x):
         cos_dist = self.cosine_distance(x)
@@ -531,6 +538,9 @@ def build_chemix(config):
     if "activation" not in config.regressor:
         warnings.warn("chemix.regressor.activation not found, using default `sigmoid`")
         config.regressor.activation = "sigmoid"
+    if "no_bias" not in config.regressor:
+        warnings.warn("chemix.regressor.no_bias not found, using default `False`")
+        config.regressor.no_bias = False
 
     output_dim = config.regressor.output_dim
     act = config.regressor.activation
@@ -538,7 +548,7 @@ def build_chemix(config):
         RegressorEnum.sum: SumRegressor(output_dim, act),
         RegressorEnum.minmax: MinMaxRegressor(output_dim, act),
         RegressorEnum.pna: PNARegressor(output_dim, act),
-        RegressorEnum.scaled_cosine: ScaledCosineRegressor(output_dim, act),
+        RegressorEnum.scaled_cosine: ScaledCosineRegressor(output_dim, act, config.regressor.no_bias),
     }
 
     chemix = Chemix(

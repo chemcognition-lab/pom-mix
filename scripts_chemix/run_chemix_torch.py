@@ -6,6 +6,12 @@ import numpy as np
 from torchinfo import summary
 from sklearn.model_selection import train_test_split
 
+from pathlib import Path
+
+script_dir = Path(__file__).parent
+base_dir = Path(*script_dir.parts[:-1])
+sys.path.append( str(base_dir / 'src/') )
+
 from chemix.model import build_chemix
 from chemix.data import dataset_to_torch
 from chemix.train import train

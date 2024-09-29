@@ -7,7 +7,6 @@ sys.path.append(str(base_dir / "src/"))
 
 import seaborn as sns
 from dataloader.dataloader import DatasetLoader, SplitLoader
-from pommix_utils import permute_mixture_pairs, pna
 
 from xgboost import XGBRegressor
 from sklearn.metrics import root_mean_squared_error, mean_squared_error, r2_score
@@ -46,7 +45,7 @@ if __name__ == "__main__":
 
     feat_type = FLAGS.feat_type
 
-    fname = f"all_features_angle_sim_step3_mix_rdkit2d_mean"
+    fname = f"best_features_angle_sim_step3_mix_rdkit2d_mean"
     os.makedirs(fname, exist_ok=True)
 
     dl = DatasetLoader()
@@ -67,16 +66,21 @@ if __name__ == "__main__":
         val_labels = val_labels.astype(float)
         test_labels = test_labels.astype(float)
 
-        # select 32 best features
-        best_n_features = pd.read_csv(f"../{"best_n_features_angle_sim_step2_mix_rdkit2d_mean"}/best_nth_feature_{id}.csv")
+        # select n best features
+        best_n_features = pd.read_csv(f"{"best_n_features_angle_sim_step2_mix_rdkit2d_mean"}/best_nth_feature_{id}.csv")
         best_n_zscore = -zscore(best_n_features["rmse_avg"])
         # set all negative values to 0
         best_n_zscore = [max(0, x) for x in best_n_zscore]
         # get index of positive features
         positive_features = [i for i, x in enumerate(best_n_zscore) if x > 0]
+        # num of features to select
+        with open(f"./{"random_select_n_features_angle_sim_step1_mix_rdkit2d_mean"}/model_{id}_stats.json") as json_file:
+            select_n = json.load(json_file)
+        n_features = select_n["n_best"]
         rmse_min = 1e7
         for i in range(1, 4000):
-            idx_best_features = np.random.choice(positive_features, 32, replace=False)
+            print(f"i={i}")
+            idx_best_features = np.random.choice(positive_features, n_features, replace=False)
             # similarity model between mixtures
             y_train = angle_similarity(
                 torch.tensor(train_features[:, idx_best_features, 0]),
@@ -113,5 +117,4 @@ if __name__ == "__main__":
         json.dump(logger, open(f"{fname}/model_{id}_stats.json", "w"), indent=4)
 
         test_results.append(logger)
-        break  # only run for first split
     pd.DataFrame(test_results).to_pickle(f"{fname}/all_results.pkl")

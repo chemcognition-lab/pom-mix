@@ -7,7 +7,6 @@ sys.path.append(str(base_dir / "src/"))
 
 import seaborn as sns
 from dataloader.dataloader import DatasetLoader, SplitLoader
-from pommix_utils import permute_mixture_pairs, pna
 from similarity_model.model import AngleSimilarityModel
 
 from xgboost import XGBRegressor
@@ -76,7 +75,8 @@ if __name__ == "__main__":
         for n in range(2, 200):  # 200
             select_n_results[n] = {}
             rmse_list = []
-            for i in range(0, 2000):  # 1000
+            for i in range(0, 20000):
+                print(f"id={id}, n={n}, i={i}")
                 # generate index with n features
                 idx_features = np.random.choice(
                     train_features.shape[1], n, replace=False
@@ -93,9 +93,12 @@ if __name__ == "__main__":
                 rmse_list.append(rmse)
             select_n_results[n]["rmse_avg"] = np.mean(rmse_list)
             select_n_results[n]["rmse_std"] = np.std(rmse_list)
+            select_n_results[n]["rmse_avg-std"] = np.mean(rmse_list) - np.std(rmse_list)
 
         # use best n features for prediction
-        n_best = min(select_n_results, key=lambda x: select_n_results[x]["rmse_avg"])
+        n_best = min(
+            select_n_results, key=lambda x: select_n_results[x]["rmse_avg-std"]
+        )
         idx_features = np.random.choice(train_features.shape[1], n_best, replace=False)
         y_pred = angle_similarity(
             torch.tensor(test_features[:, idx_features, 0]),
@@ -117,6 +120,7 @@ if __name__ == "__main__":
         logger["kendall"] = kendalltau(test_labels.flatten(), y_pred.flatten())[
             0
         ].astype(float)
+        logger["n_best"] = n_best
         json.dump(logger, open(f"{fname}/model_{id}_stats.json", "w"), indent=4)
         test_results.append(logger)
         pd.DataFrame(test_results).to_pickle(f"{fname}/all_results.pkl")
