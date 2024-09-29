@@ -1,4 +1,7 @@
+import sys
 from typing import Optional, Iterable
+
+from pathlib import Path
 
 from dataloader.representations import graph_utils
 from pom.gnn import GraphNets
@@ -7,6 +10,12 @@ from pom.data import GraphDataset
 from sklearn.model_selection import train_test_split
 
 import numpy as np
+import seaborn as sns
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib import font_manager
+import pandas as pd
+
 import torch
 from torch_geometric.loader import DataLoader as pygdl
 
@@ -113,5 +122,30 @@ def bootstrap_ci(true_values, predictions, metric_fn, num_samples=1000, alpha=0.
     upper_bound = np.percentile(values, (1 - alpha / 2) * 100)
 
     return lower_bound, upper_bound, values
+
+def set_visualization_style():
+    try:
+        from pyfonts import load_font
+        # Add custom fonts
+        font = load_font(font_url="https://github.com/googlefonts/dm-fonts/raw/refs/heads/main/Sans/fonts/ttf/DMSans24pt-Regular.ttf")
+        font_manager.fontManager.addfont(font_manager.findfont(font))
+        mpl.rcParams['font.sans-serif'] = [font.get_name()]
+        print('Load preferred font.')
+    except:
+        mpl.rcParams['font.family'] = 'sans-serif'
+        mpl.rcParams['font.sans-serif'] = 'DejaVu Sans'
+        print('Using default font.')
+
+    # Set global font
+    mpl.rcParams['savefig.dpi'] = 72
+    mpl.rcParams['savefig.pad_inches'] = 0.1
+    mpl.rcParams['savefig.transparent'] = True
+    mpl.rcParams['axes.linewidth'] = 2.5
+    mpl.rcParams['legend.markerscale'] = 1.0
+    mpl.rcParams['legend.fontsize'] = 'small'
+
+    # seaborn color palette
+    sns.set_palette('colorblind')
+    sns.set_context('talk', font_scale=1.3)
 
 

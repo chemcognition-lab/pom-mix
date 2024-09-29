@@ -420,7 +420,7 @@ class DatasetLoader:
 
         
         features = concatenated
-        labels = np.append(labels, jaccard_distances)
+        labels = np.concatenate([labels, jaccard_distances])
 
         return features, labels
 
@@ -428,7 +428,7 @@ class DatasetLoader:
 
 class SplitLoader:
     def __init__(self, split_set: str = "random_cv"):
-        assert split_set in ["random_cv", "ablate_components", "ablate_molecules", "lso_molecules"]
+        assert split_set in ["random_cv", "ablate_components", "ablate_molecules", "lso_molecules", "random_train_val"]
         self.split_set = split_set
 
     def load_splits(self, features, labels):

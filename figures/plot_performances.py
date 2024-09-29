@@ -17,12 +17,8 @@ import pandas as pd
 import torch
 import numpy as np
 
-from argparse import ArgumentParser
-
-# parser = ArgumentParser()
-# parser.add_argument("--split", action="store", type=str, default="ablate_components", choices=["ablate_molecules", "ablate_components"])
-# 
-# FLAGS = parser.parse_args()
+from pommix_utils import set_visualization_style
+set_visualization_style()
 
 if __name__ == '__main__':
 
@@ -33,7 +29,7 @@ if __name__ == '__main__':
         'XGBoost\nrdkit', 
         'XGBoost\nPOM embed',
         'CheMix\nPOM embed',
-        'POM-Mix']
+        'POMMix']
 
     for filename, tag in zip(
         [   
@@ -125,7 +121,7 @@ if __name__ == '__main__':
             cap.set_markeredgewidth(5)
         
         # axs[i].locator_params(axis='x', nbins=7)
-        axs[i].set_ylabel('Model')
+        # axs[i].set_ylabel('Model')
         axs[i].set_xlabel(f'{metric_name[metric]}')
 
     # Adjust layout and display the plot
@@ -142,8 +138,8 @@ if __name__ == '__main__':
     model_order = [
         'CheMix CV',
         'CheMix LMO',
-        'POM-Mix CV',
-        'POM-Mix LMO']
+        'POMMix CV',
+        'POMMix LMO']
 
     for split, filename, tag in zip(
         ['cv', 'lso', 'cv', 'lso'],
@@ -186,8 +182,6 @@ if __name__ == '__main__':
     
     all_df.to_csv('compiled_metrics.csv', index=False)
     # samples_df.to_csv('compiled_metrics_significance.csv', index=False)
-
-
     metrics = all_df['metric'].unique()
 
     # # loop through and test significance
@@ -209,7 +203,7 @@ if __name__ == '__main__':
     # print(all_df)
 
     # Create a figure with 3 subplots
-    fig, axs = plt.subplots(1, 3, figsize=(30, 10), sharey=True)
+    fig, axs = plt.subplots(1, 3, figsize=(30, 10), sharey=False)
     axs = axs.flatten()
 
     # Plot each metric
@@ -223,8 +217,8 @@ if __name__ == '__main__':
         sns.boxplot(data=metric_data, x='fname', y='value', hue='fname', ax=axs[i], order=model_order, legend=legend)
         
         # axs[i].locator_params(axis='x', nbins=7)
-        axs[i].set_ylabel('Model')
-        axs[i].set_xlabel(f'{metric_name[metric]}')
+        axs[i].set_ylabel(f'{metric_name[metric]}')
+        axs[i].set_xlabel(f'Model')
 
     # Adjust layout and display the plot
     plt.tight_layout()
