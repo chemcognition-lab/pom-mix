@@ -25,6 +25,7 @@ import torch
 import torch.nn as nn
 import torchmetrics.functional as F
 from torch.utils.data import TensorDataset, DataLoader
+from torch_geometric.data import Batch
 import tqdm
 from ml_collections import ConfigDict
 
@@ -41,12 +42,12 @@ from pom.gnn.graphnets import GraphNets
 
 parser = ArgumentParser()
 parser.add_argument("--run-name", action="store", type=str, default="model", help="Name of run, defaults to `model`.")
-parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components", "lso_molecules"])
+parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components", "lso_molecules", "random_train_val"])
 parser.add_argument("--batch-size", action="store", type=int, default=128, help='Batch size for training.')
-parser.add_argument("--augment", action="store_false", default=False, help="Toggle augmenting the training set.")
+parser.add_argument("--augment", action="store_true", default=False, help="Toggle augmenting the training set.")
 parser.add_argument("--pom-path", action="store", default=base_dir / "scripts_pom/gs-lf_models/pretrained_pom", 
                     help="Path where POM model parameter and weights are found.")
-parser.add_argument("--chemix-path", action="store", default=base_dir / "scripts_chemix/results/pretrained_mixture", 
+parser.add_argument("--chemix-path", action="store", default=base_dir / "scripts_chemix/results/pretrained_model", 
                     help="Path where chemix model parameter and weights are found.")
 parser.add_argument("--no-verbose", action="store_true", default=False, help='Toggle the verbosity of training. Default False')
 parser.add_argument("--no-bias", action="store_true", default=False, help='Turn off the bias in final linear layer. Default False')
@@ -65,6 +66,7 @@ if __name__ == '__main__':
     chemix_path = Path(FLAGS.chemix_path)
     batch_size = FLAGS.batch_size
     no_bias = FLAGS.no_bias
+    augment = FLAGS.augment
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Running on: {device}')
@@ -78,24 +80,51 @@ if __name__ == '__main__':
     # training set
     dl = DatasetLoader()
     dl.load_dataset('mixtures')
-    dl.featurize('mix_pom_embeddings')
+    if not augment:
+        dl.featurize('mix_pom_embeddings')
+    else:
+        dl.featurize('mix_smiles')
 
     # perform CV split
     sl = SplitLoader(FLAGS.split)
     test_results = []
-    best_metric = np.nan
     for id, train, val, test in sl.load_splits(dl.features, dl.labels):
         # gather the graphs for mixtures
         train_features, train_labels = train
+        val_features, val_labels = val
+        test_features, test_labels = test
+
+        # perform augmentation
+        if augment:
+            train_features, train_labels = dl.single_molecule_mixture_gslf_jaccards(train_features, train_labels)
+            
+            # translate smiles into embeddings on the fly
+            with torch.no_grad():
+                hp_gnn = ConfigDict(json.load(open(pom_path / 'hparams.json', 'r')))
+                embedder = GraphNets(node_dim=NODE_DIM, edge_dim=EDGE_DIM, **hp_gnn)
+                embedder.load_state_dict(torch.load(pom_path / 'gnn_embedder.pt'))
+                embedder = embedder.to(device)
+                embedder.eval()
+
+                graph_list, train_indices = get_mixture_smiles(train_features, from_smiles)
+                train_gr = Batch.from_data_list(graph_list).to(device)
+                train_features = embedder.graphs_to_mixtures(train_gr, train_indices, device=device).detach().cpu().numpy()
+
+                graph_list, val_indices = get_mixture_smiles(val_features, from_smiles)
+                val_gr = Batch.from_data_list(graph_list).to(device)
+                val_features = embedder.graphs_to_mixtures(val_gr, val_indices, device=device).detach().cpu().numpy()
+
+                graph_list, test_indices = get_mixture_smiles(test_features, from_smiles)
+                test_gr = Batch.from_data_list(graph_list).to(device)
+                test_features = embedder.graphs_to_mixtures(test_gr, test_indices, device=device).detach().cpu().numpy()
+
         train_features = torch.tensor(train_features, dtype=torch.float32).to(device)
         y_train = torch.tensor(train_labels, dtype=torch.float32).to(device)
         train_loader = DataLoader(TensorDataset(train_features, y_train), batch_size=batch_size, shuffle=True)
-
-        val_features, val_labels = val
+    
         val_features = torch.tensor(val_features, dtype=torch.float32).to(device)
         y_val = torch.tensor(val_labels, dtype=torch.float32).to(device)
 
-        test_features, test_labels = test
         test_features = torch.tensor(test_features, dtype=torch.float32).to(device)
         y_test = torch.tensor(test_labels, dtype=torch.float32).to(device)
 
