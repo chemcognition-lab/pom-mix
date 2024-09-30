@@ -43,7 +43,7 @@ from pom.gnn.graphnets import GraphNets
 parser = ArgumentParser()
 parser.add_argument("--run-name", action="store", type=str, default="model", help="Name of run, defaults to `model`.")
 parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components", "lso_molecules", "random_train_val"])
-parser.add_argument("--batch-size", action="store", type=int, default=128, help='Batch size for training.')
+parser.add_argument("--batch-size", action="store", type=int, default=500, help='Batch size for training.')
 parser.add_argument("--augment", action="store_true", default=False, help="Toggle augmenting the training set.")
 parser.add_argument("--pom-path", action="store", default=base_dir / "scripts_pom/gs-lf_models/pretrained_pom", 
                     help="Path where POM model parameter and weights are found.")
