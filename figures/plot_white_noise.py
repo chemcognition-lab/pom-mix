@@ -45,22 +45,22 @@ if __name__ == '__main__':
     dl.featurize('mix_smiles')
 
     # keep only snitz
-    indices = np.where(np.char.find(dl.dataset_id.astype(str), 'Snitz 1') != -1)[0]
-    dl.features = dl.features[indices]
-    dl.labels = dl.labels[indices]
+    # indices = np.where(np.char.find(dl.dataset_id.astype(str), 'Snitz 1') != -1)[0]
+    # dl.features = dl.features[indices]
+    # dl.labels = dl.labels[indices]
 
     geom_mean = np.array([ np.sqrt(len(mixes[0]) * len(mixes[1])) for mixes in dl.features])
-    # geom_mean = np.round(geom_mean * 2) / 2
+    geom_mean = np.round(geom_mean * 2) / 2
 
     # load chemix model and get embedding=
-    pommix_path = base_dir / "scripts_pommix/results/pretrained_model/model"
+    pommix_path = base_dir / "scripts_pommix/results/random_train_val/model"
     hp_gnn = ConfigDict(json.load(open(pommix_path / 'hparams_graphnets.json', 'r')))
     embedder = GraphNets(node_dim=NODE_DIM, edge_dim=EDGE_DIM, **hp_gnn)
-    embedder.load_state_dict(torch.load(pommix_path / 'gnn_embedder.pt'))
+    embedder.load_state_dict(torch.load(pommix_path / 'random_train_val_gnn_embedder.pt'))
     embedder.eval()
     hp_mix = ConfigDict(json.load(open(pommix_path / f'hparams_chemix.json', 'r')))
     chemix = build_chemix(config=hp_mix.chemix)
-    chemix.load_state_dict(torch.load(pommix_path / 'chemix.pt'))
+    chemix.load_state_dict(torch.load(pommix_path / 'random_train_val_chemix.pt'))
     chemix.eval()
 
     # the smiles
@@ -70,10 +70,11 @@ if __name__ == '__main__':
     pommix_embeds = chemix.embed(out).detach().numpy().squeeze()
 
     dist = np.diagonal(cosine_measure(pommix_embeds[...,0], pommix_embeds[...,1]))
+    # dist= dl.labels.squeeze()
     
     # remove single mixtures
-    geom_mean = geom_mean[dist != 0 ]
-    dist = dl.labels.squeeze()[dist != 0 ]
+    # geom_mean = geom_mean[dist != 0 ]
+    # dist = dl.labels.squeeze()[dist != 0 ]
 
     m, b, rho, p, _ = linregress(geom_mean, dist)
     x_fit = np.linspace(0, 43)
@@ -86,6 +87,6 @@ if __name__ == '__main__':
     ax.text(0.65, 0.85, f'Pearson $\\rho$: {rho:.2f}',
             transform=ax.transAxes, fontsize=14,
             verticalalignment='bottom', bbox=dict(facecolor='white', alpha=0.5))      
-    plt.savefig("pommix_white_noise_snitz_exp.png", bbox_inches="tight")
-    # plt.savefig("pommix_white_noise.svg", bbox_inches="tight")
+    plt.savefig("pommix_white_noise.png", bbox_inches="tight")
+    plt.savefig("pommix_white_noise.svg", bbox_inches="tight")
 

@@ -95,7 +95,7 @@ if __name__ == '__main__':
     # print(all_df)
 
     # Create a figure with 3 subplots
-    fig, axs = plt.subplots(1, 3, figsize=(30, 10), sharey=True)
+    fig, axs = plt.subplots(1, 3, figsize=(18, 6), sharey=True)
     axs = axs.flatten()
 
     # List of metrics

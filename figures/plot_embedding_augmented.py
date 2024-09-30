@@ -46,7 +46,7 @@ if __name__ == '__main__':
     pna_pom_embeds = pna(pom_embeds.copy())
 
     # load chemix model and get embedding
-    chemix_path = base_dir / "scripts_chemix/results/random_train_val/model"
+    chemix_path = base_dir / "scripts_chemix/results/random_train_val/model_augmented"
     hp_mix = ConfigDict(json.load(open(chemix_path / f'hparams_chemix.json', 'r')))
     chemix = build_chemix(config=hp_mix.chemix)
     chemix.load_state_dict(torch.load(chemix_path / 'random_train_val_chemix.pt'))
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     chemix_embeds = chemix.embed(torch.from_numpy(pom_embeds).float().unsqueeze(-1)).detach().numpy().squeeze()
 
     # load chemix model and get embedding=
-    pommix_path = base_dir / "scripts_pommix/results/random_train_val/model"
+    pommix_path = base_dir / "scripts_pommix/results/random_train_val/model_augmented"
     hp_gnn = ConfigDict(json.load(open(pommix_path / 'hparams_graphnets.json', 'r')))
     embedder = GraphNets(node_dim=NODE_DIM, edge_dim=EDGE_DIM, **hp_gnn)
     embedder.load_state_dict(torch.load(pommix_path / 'random_train_val_gnn_embedder.pt'))
@@ -76,20 +76,20 @@ if __name__ == '__main__':
     df['pommix_embed'] = list(pommix_embeds)
     label_df = pd.read_csv(DATASET_DIR / 'mixtures/mixtures_combined.csv')
 
-    def get_embedding(df, dataset, mixture_id, embedding_type):
-        return df[(df['Dataset'] == dataset) & (df['Mixture Label'] == mixture_id)][embedding_type].values[0]
+    # def get_embedding(df, dataset, mixture_id, embedding_type):
+    #     return df[(df['Dataset'] == dataset) & (df['Mixture Label'] == mixture_id)][embedding_type].values[0]
     
-    def embedding_cosine_distance(df, dataset, mixture_1, mixture_2, embedding_type):
-        return cosine(get_embedding(df, dataset, mixture_1, embedding_type), get_embedding(df, dataset, mixture_2, embedding_type))
+    # def embedding_cosine_distance(df, dataset, mixture_1, mixture_2, embedding_type):
+    #     return cosine(get_embedding(df, dataset, mixture_1, embedding_type), get_embedding(df, dataset, mixture_2, embedding_type))
 
-    for i, row in label_df.iterrows():
-        label_df.loc[i, 'POM Cosine Distance'] = embedding_cosine_distance(df, row['Dataset'], row['Mixture 1'], row['Mixture 2'], 'pom_embed')
-        label_df.loc[i, 'CheMix Cosine Distance'] = embedding_cosine_distance(df, row['Dataset'], row['Mixture 1'], row['Mixture 2'], 'chemix_embed')
-        label_df.loc[i, 'POMMix Cosine Distance'] = embedding_cosine_distance(df, row['Dataset'], row['Mixture 1'], row['Mixture 2'], 'pommix_embed')
+    # for i, row in label_df.iterrows():
+    #     label_df.loc[i, 'POM Cosine Distance'] = embedding_cosine_distance(df, row['Dataset'], row['Mixture 1'], row['Mixture 2'], 'pom_embed')
+    #     label_df.loc[i, 'CheMix Cosine Distance'] = embedding_cosine_distance(df, row['Dataset'], row['Mixture 1'], row['Mixture 2'], 'chemix_embed')
+    #     label_df.loc[i, 'POMMix Cosine Distance'] = embedding_cosine_distance(df, row['Dataset'], row['Mixture 1'], row['Mixture 2'], 'pommix_embed')
 
 
     ##### PLOT INDIVIDUAL EMBEDDINGS #####
-    for feat_name, embed in zip(['POM', 'CheMix', 'POM-Mix'], [pna_pom_embeds, chemix_embeds, pommix_embeds]):
+    for feat_name, embed in zip(['CheMix augmented', 'POMMix augmented'], [chemix_embeds, pommix_embeds]):
         df_embed = pd.DataFrame({'Dataset': dataset_id.tolist()})
 
         # UMAP
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         plt.savefig(f'embedding_space_{feat_name}.png', bbox_inches='tight')
         plt.savefig(f'embedding_space_{feat_name}.svg', bbox_inches='tight', format='svg')
         
-        #import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
 
     # plot the cosine distance
     label_df['Dataset'] = label_df['Dataset'].str.replace(' 1', '').str.replace(' 2', '').str.replace(' 3', '').str.replace(' 4', '')
