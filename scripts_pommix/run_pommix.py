@@ -40,12 +40,13 @@ from pom.gnn.graphnets import GraphNets
 
 parser = ArgumentParser()
 parser.add_argument("--run-name", action="store", type=str, default="model", help="Name of run, defaults to `model`.")
-parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components", "lso_molecules"])
+parser.add_argument("--split", action="store", type=str, default="random_cv", choices=["random_cv", "ablate_molecules", "ablate_components", "lso_molecules", "random_train_val"])
 parser.add_argument("--pom-path", action="store", default=base_dir / "scripts_pom/gs-lf_models/pretrained_pom", 
                     help="Path where POM model parameter and weights are found.")
 parser.add_argument("--chemix-path", action="store", default=base_dir / "scripts_chemix/results", 
                     help="Path where chemix model parameter and weights are found.")
 parser.add_argument("--random-chemix", action="store_false", default=True, help='Toggle the loading of chemix. Default True. Otherwise start training from random.')
+parser.add_argument("--augment", action="store_true", default=False, help="Toggle augmenting the training set.")
 parser.add_argument("--gnn-freeze", action="store_true", default=False, help='Toggle freeze GNN POM weights. Default False')
 parser.add_argument("--no-verbose", action="store_true", default=False, help='Toggle the verbosity of training. Default False')
 parser.add_argument("--no-bias", action="store_true", default=False, help='Turn off the bias in final linear layer. Default False')
@@ -58,7 +59,7 @@ np.set_printoptions(precision=3)
 if __name__ == '__main__':
     # create folder for results
     fname = Path(f'results/{FLAGS.split}/{FLAGS.run_name}')
-    os.makedirs(f'{fname}/', exist_ok=True)
+    
 
     # path where the pretrained models are stored
     pom_path = Path(FLAGS.pom_path)
@@ -66,6 +67,14 @@ if __name__ == '__main__':
     chemix_path = chemix_path / "model" if not FLAGS.no_bias else chemix_path / "model_no_bias"
     random_chemix = FLAGS.random_chemix
     no_bias = FLAGS.no_bias
+    augment = FLAGS.augment
+
+    # change the save and load path
+    if augment:
+        fname = Path(str(fname) + '_augmented')
+        chemix_path = Path(str(chemix_path) + '_augmented')
+
+    os.makedirs(f'{fname}/', exist_ok=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Running on: {device}')
