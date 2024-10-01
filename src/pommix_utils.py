@@ -137,15 +137,15 @@ def set_visualization_style():
         print('Using default font.')
 
     # Set global font
-    mpl.rcParams['savefig.dpi'] = 72
+    mpl.rcParams['savefig.dpi'] = 300
     mpl.rcParams['savefig.pad_inches'] = 0.1
     mpl.rcParams['savefig.transparent'] = True
-    mpl.rcParams['axes.linewidth'] = 2.5
+    # mpl.rcParams['axes.linewidth'] = 2.5
     mpl.rcParams['legend.markerscale'] = 1.0
     mpl.rcParams['legend.fontsize'] = 'small'
 
     # seaborn color palette
     sns.set_palette('colorblind')
-    sns.set_context('talk', font_scale=1.3)
+    # sns.set_context('talk', font_scale=1.3)
 
 
