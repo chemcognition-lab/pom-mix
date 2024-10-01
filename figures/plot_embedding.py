@@ -49,7 +49,7 @@ if __name__ == '__main__':
     chemix_path = base_dir / "scripts_chemix/results/random_train_val/model"
     hp_mix = ConfigDict(json.load(open(chemix_path / f'hparams_chemix.json', 'r')))
     chemix = build_chemix(config=hp_mix.chemix)
-    chemix.load_state_dict(torch.load(chemix_path / 'random_train_val_chemix.pt'))
+    chemix.load_state_dict(torch.load(chemix_path / 'random_train_val.pt'))
     chemix.eval()
     chemix_embeds = chemix.embed(torch.from_numpy(pom_embeds).float().unsqueeze(-1)).detach().numpy().squeeze()
 
@@ -142,5 +142,29 @@ if __name__ == '__main__':
         ax.set_xlabel(f'{feat_name} Cosine Distance')
         ax.set_ylabel('Perceptual Similarity')
 
-    plt.savefig(f'embedding_cosine_distance.png', bbox_inches='tight')
-    plt.savefig(f'embedding_cosine_distance.svg', bbox_inches='tight', format='svg')
+    plt.savefig(f'all_embedding_cosine_distance.png', bbox_inches='tight')
+    plt.savefig(f'all_embedding_cosine_distance.svg', bbox_inches='tight', format='svg')
+    
+    fig, ax = plt.subplots(1,1, figsize=(4,4), dpi=180)
+    
+    sns.scatterplot(label_df, x=f'POMMix Cosine Distance', y='Experimental Values', hue='Dataset', ax=ax, legend=False)
+    
+    r, _ = pearsonr(label_df[f'POMMix Cosine Distance'], label_df['Experimental Values'])
+    snitz_r, _ = pearsonr(label_df[label_df['Dataset'] == 'Snitz'][f'POMMix Cosine Distance'], label_df[label_df['Dataset'] == 'Snitz']['Experimental Values'])
+    bushdid_r, _ = pearsonr(label_df[label_df['Dataset'] == 'Bushdid'][f'POMMix Cosine Distance'], label_df[label_df['Dataset'] == 'Bushdid']['Experimental Values'])
+    ravia_r, _ = pearsonr(label_df[label_df['Dataset'] == 'Ravia'][f'POMMix Cosine Distance'], label_df[label_df['Dataset'] == 'Ravia']['Experimental Values'])
+    ax.text(0.7, 0.05, f'Overall $\\rho$: {r:.2f}\n' 
+                        f'Snitz $\\rho$: {snitz_r:.2f}\n'
+                        f'Bushdid $\\rho$: {bushdid_r:.2f}\n'
+                        f'Ravia $\\rho$: {ravia_r:.2f}', transform=ax.transAxes,
+                        verticalalignment='bottom', bbox=dict(facecolor='white', alpha=0.5))           
+    ax.set_ylim([0,1])   
+    ax.set_xlim([0,2])     
+    # ax.set_title(feat_name)
+    ax.set_xlabel(f'POMMix Cosine Distance')
+    ax.set_ylabel('Perceptual Similarity')    
+    
+    label_df.to_csv("embeddings.csv", index=False)
+    
+    plt.savefig(f'pommix_embedding_cosine_distance.png', bbox_inches='tight')
+    plt.savefig(f'pommix_embedding_cosine_distance.svg', bbox_inches='tight', format='svg')
