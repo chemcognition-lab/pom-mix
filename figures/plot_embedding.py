@@ -19,6 +19,7 @@ from pommix_utils import pna
 import torch
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import torchmetrics
 import json
 from ml_collections import ConfigDict
@@ -35,11 +36,20 @@ DATASET_DIR = base_dir / 'datasets'
 from pommix_utils import set_visualization_style
 set_visualization_style()
 
+cmap = sns.color_palette("viridis", as_cmap=True)
+
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument("--augment", action="store_true", default=False, help="Toggle augmenting the training set.")
+FLAGS = parser.parse_args()
+
 if __name__ == '__main__':
 
     # get the mixtures and their embeddings
     df = pd.read_csv(DATASET_DIR / 'mixtures/mixture_smi_definitions_clean.csv')
     dataset_id = df['Dataset'].values
+    augment = FLAGS.augment
 
     # pom embeddings 
     pom_embeds = np.load(DATASET_DIR / "mixtures/mixture_pom_embeddings.npz")['features']
@@ -47,14 +57,18 @@ if __name__ == '__main__':
 
     # load chemix model and get embedding
     chemix_path = base_dir / "scripts_chemix/results/random_train_val/model"
+    if augment:
+        chemix_path = Path(str(chemix_path) + '_augmented')
     hp_mix = ConfigDict(json.load(open(chemix_path / f'hparams_chemix.json', 'r')))
     chemix = build_chemix(config=hp_mix.chemix)
     chemix.load_state_dict(torch.load(chemix_path / 'random_train_val_chemix.pt'))
     chemix.eval()
     chemix_embeds = chemix.embed(torch.from_numpy(pom_embeds).float().unsqueeze(-1)).detach().numpy().squeeze()
 
-    # load chemix model and get embedding=
+    # load chemix model and get embedding
     pommix_path = base_dir / "scripts_pommix/results/random_train_val/model"
+    if augment:
+        pommix_path = Path(str(pommix_path) + '_augmented')
     hp_gnn = ConfigDict(json.load(open(pommix_path / 'hparams_graphnets.json', 'r')))
     embedder = GraphNets(node_dim=NODE_DIM, edge_dim=EDGE_DIM, **hp_gnn)
     embedder.load_state_dict(torch.load(pommix_path / 'random_train_val_gnn_embedder.pt'))
@@ -66,6 +80,7 @@ if __name__ == '__main__':
 
     # the smiles
     mixtures = np.array([mix[mix != ''] for mix in  df.fillna('')[[f'smi_{i}' for i in range(len(df.columns)-2)]].values], dtype=object).reshape(-1, 1)
+    lengths = np.array([len(mix) for mix in mixtures.squeeze()])
     graph_list, indices = get_mixture_smiles(mixtures, from_smiles)
     train_gr = Batch.from_data_list(graph_list)
     out = embedder.graphs_to_mixtures(train_gr, indices)
@@ -74,6 +89,9 @@ if __name__ == '__main__':
     df['pom_embed'] = list(pna_pom_embeds)
     df['chemix_embed'] = list(chemix_embeds)
     df['pommix_embed'] = list(pommix_embeds)
+    df['dataset'] = list(dataset_id)
+    df['length'] = list(lengths)
+    # df['Dataset'] = df_embed['Dataset'].str.replace(' 1', '').str.replace(' 2', '').str.replace(' 3', '').str.replace(' 4', '')
     label_df = pd.read_csv(DATASET_DIR / 'mixtures/mixtures_combined.csv')
 
     def get_embedding(df, dataset, mixture_id, embedding_type):
@@ -89,32 +107,67 @@ if __name__ == '__main__':
 
 
     ##### PLOT INDIVIDUAL EMBEDDINGS #####
-    for feat_name, embed in zip(['POM', 'CheMix', 'POM-Mix'], [pna_pom_embeds, chemix_embeds, pommix_embeds]):
+    markers = {"Snitz": 'o', 'Bushdid': 'v', 'Ravia': 's'}
+    # # cmap = plt.cm.get_cmap('greens')
+    # norm = plt.Normalize(df['length'].min(), df['length'].max())
+
+    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    # df['edge_color'] = df.apply(lambda row: sm.to_rgba(row['length']), axis=1)
+
+    for i, (feat_name, embed) in enumerate(zip(['POM', 'CheMix', 'POMMix'], [pna_pom_embeds, chemix_embeds, pommix_embeds])):
         df_embed = pd.DataFrame({'Dataset': dataset_id.tolist()})
+        df_embed['Number of Components'] = lengths
+
+        if augment and feat_name == 'POM':
+            print('Skipping POM, augmentation has no effect.')
+            continue
 
         # UMAP
-        reducer = UMAP(metric='cosine', n_neighbors=100, min_dist=1.0)
+        reducer = UMAP(metric='cosine', n_neighbors=100, min_dist=1.0, random_state=42)
         red_dim = reducer.fit_transform(embed)
-        df_embed['UMAP 1'] = list(red_dim[:,0])
-        df_embed['UMAP 2'] = list(red_dim[:,1])
+        df_embed['UMAP 0'] = list(red_dim[:,0])
+        df_embed['UMAP 1'] = list(red_dim[:,1])
 
         # PCA
         reducer = PCA()
         red_dim = reducer.fit_transform(embed)
-        df_embed[f'PCA 1 ({reducer.explained_variance_ratio_[0]*100:.2f}%)'] = list(red_dim[:,0])
-        df_embed[f'PCA 2 ({reducer.explained_variance_ratio_[1]*100:.2f}%)'] = list(red_dim[:,1])
+        df_embed[f'PCA 0 ({reducer.explained_variance_ratio_[0]*100:.2f}%)'] = list(red_dim[:,0])
+        df_embed[f'PCA 1 ({reducer.explained_variance_ratio_[1]*100:.2f}%)'] = list(red_dim[:,1])
 
         df_embed['Dataset'] = df_embed['Dataset'].str.replace(' 1', '').str.replace(' 2', '').str.replace(' 3', '').str.replace(' 4', '')
 
 
-        fig, axes = plt.subplots(2, 1, figsize=(13, 26))
-        for ax, decomp in zip(axes.flatten(), ['UMAP', 'PCA']):
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
+        for i, (ax, decomp) in enumerate(zip(axes.flatten(), ['UMAP', 'PCA'])):
             names = [n for n in df_embed.columns if decomp in n]
-            sns.scatterplot(df_embed, x=names[0], y=names[1],  hue='Dataset', alpha=0.7, ax=ax)
+            sns.scatterplot(df_embed, x=names[0], y=names[1], hue='Number of Components', style='Dataset', 
+                            alpha=0.7, ax=ax, palette=cmap, markers=markers, edgecolor='black')
+            
+            norm = plt.Normalize(df_embed['Number of Components'].min(), df_embed['Number of Components'].max())
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm.set_array([])
+            fig.colorbar(sm, ax=ax, label='Number of Components')
+
+            if i == len(axes)-1:
+                hand, labl = ax.get_legend_handles_labels()
+                handout=[]
+                lablout=[]
+                for h,l in zip(hand,labl):
+                    if l in ['Snitz', 'Ravia', 'Bushdid']:
+                        lablout.append(l)
+                        handout.append(h)
+                ax.legend(handout, lablout)
+            else:
+                ax.get_legend().remove()
+
+            ax.set_aspect('equal', adjustable='datalim')
+
+        if augment:
+            feat_name += '_augmented'
+
         plt.savefig(f'embedding_space_{feat_name}.png', bbox_inches='tight')
         plt.savefig(f'embedding_space_{feat_name}.svg', bbox_inches='tight', format='svg')
         
-        #import pdb; pdb.set_trace()
 
     # plot the cosine distance
     label_df['Dataset'] = label_df['Dataset'].str.replace(' 1', '').str.replace(' 2', '').str.replace(' 3', '').str.replace(' 4', '')

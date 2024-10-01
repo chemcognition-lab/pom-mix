@@ -50,7 +50,7 @@ if __name__ == '__main__':
     # dl.labels = dl.labels[indices]
 
     geom_mean = np.array([ np.sqrt(len(mixes[0]) * len(mixes[1])) for mixes in dl.features])
-    geom_mean = np.round(geom_mean * 2) / 2
+    # geom_mean = np.round(geom_mean * 2) / 2
 
     # load chemix model and get embedding=
     pommix_path = base_dir / "scripts_pommix/results/random_train_val/model"

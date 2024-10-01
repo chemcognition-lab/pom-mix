@@ -132,21 +132,20 @@ if __name__ == '__main__':
 
 
     ###### 
-
     all_df = []
     samples_df = []
     model_order = [
         'CheMix CV',
-        'CheMix LMO',
         'POMMix CV',
+        'CheMix LMO',
         'POMMix LMO']
 
     for split, filename, tag in zip(
         ['cv', 'lso', 'cv', 'lso'],
         [   
             base_dir / 'scripts_chemix/results/random_cv/model',
-            base_dir / 'scripts_chemix/results/lso_molecules/model',
             base_dir / 'scripts_pommix/results/random_cv/model',
+            base_dir / 'scripts_chemix/results/lso_molecules/model',
             base_dir / 'scripts_pommix/results/lso_molecules/model',
         ], 
         model_order
@@ -183,24 +182,6 @@ if __name__ == '__main__':
     all_df.to_csv('compiled_metrics.csv', index=False)
     # samples_df.to_csv('compiled_metrics_significance.csv', index=False)
     metrics = all_df['metric'].unique()
-
-    # # loop through and test significance
-    # comparisons = []
-    # for i, gdf in samples_df.groupby('fname'):
-    #     for j, gdf2 in samples_df.groupby('fname'):
-    #         if i == j:
-    #             continue
-    #         for m in metrics:
-    #             t_ind, p_val = wilcoxon(gdf[m], gdf2[m])
-    #             comparisons.append({'metric': m, 'A': i, 'B': j, 't_ind': t_ind, 'p_val': p_val})
-            
-    # comparisons = pd.DataFrame(comparisons)
-    # print('The following are NOT statistically significantly different...')
-    # print(comparisons[comparisons['p_val'] > 0.05].head())
-
-    # print()
-    # print('Here are the statistics... ')
-    # print(all_df)
 
     # Create a figure with 3 subplots
     fig, axs = plt.subplots(1, 3, figsize=(30, 10), sharey=False)
