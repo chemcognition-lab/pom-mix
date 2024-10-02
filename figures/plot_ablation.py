@@ -54,9 +54,11 @@ if __name__ == '__main__':
         y_lower.append(lower_bound)
         label.extend(lab)
 
-    fig,ax = plt.subplots(1,1, figsize=(10, 6))
+    fig,ax = plt.subplots(1,1, figsize=(8, 4))
     ax.errorbar(X, Y, yerr=[np.array(Y) - np.array(y_lower), np.array(y_upper) - np.array(Y)], fmt='o', ecolor='r', capsize=5)
     ax.scatter(X, Y, color='b')
+    ax.set_xlim([250, 800])
+    ax.set_title(r'Ablation study at thresholds of $\sqrt{n_1 \cdot n_2}$')
     for i, txt in enumerate(label):
         ax.annotate(txt, (X[i]+5, Y[i]))
 
@@ -64,10 +66,3 @@ if __name__ == '__main__':
     ax.set_ylabel('Pearson correlation')
     plt.savefig(f'{FLAGS.split}_plot.png', bbox_inches='tight')
     plt.savefig(f'{FLAGS.split}_plot.svg', bbox_inches='tight', format='svg')
-
-
-
-    
-        
-
-        
