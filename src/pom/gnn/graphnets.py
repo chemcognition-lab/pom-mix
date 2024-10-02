@@ -10,7 +10,6 @@ from torch_geometric.utils import scatter, to_dense_batch
 from torch_geometric.nn import MetaLayer, Linear, GATConv, GAT
 from torch_geometric.nn.aggr import MultiAggregation
 
-# inspired by DIONYSUS (https://github.com/aspuru-guzik-group/dionysus/blob/main/dionysus/models/modules.py)
 # and (https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.models.MetaLayer.html#torch_geometric.nn.models.MetaLayer)
     
 class EdgeFiLMModel(nn.Module):
