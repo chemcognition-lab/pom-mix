@@ -27,13 +27,6 @@ chemix:
     activation: "sigmoid"
     output_dim: 1
 
-
-# Data
-data:
-  data_path: "/u/rajao/pom-mix/datasets/mixtures/pickled_dataset/random_split"
-  train_data_folder: "train"
-  val_data_folder: "test" 
-
 # Scheduler
 loss_type: "huber"
 optimizer_type: "adam"
