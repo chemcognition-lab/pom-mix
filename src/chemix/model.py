@@ -165,11 +165,11 @@ class SigmoidalMultiHeadAttention(nn.Module):
         seq_len = key_padding_mask.shape[1]
         key_padding_mask_expanded = key_padding_mask.view(batch_size, 1, 1, seq_len).expand(-1, self.n_head, -1, -1)
 
-        # if key_padding_mask is not None:
-        #     mask = key_padding_mask.unsqueeze(1)   # For head axis broadcasting.
-
         # q, attn = self.attention(q, k, v, mask=mask)
         q, attn = self.attention(q, k, v, mask=key_padding_mask_expanded)
+
+        # intepretable attention
+        # q, attn = self.attention(q, k, F.relu(v), mask=key_padding_mask_expanded)
 
         # Transpose to move the head dimension back: b x lq x n x dv
         # Combine the last two dimensions to concatenate all the heads together: b x lq x (n*dv)
@@ -218,12 +218,6 @@ class MolecularAttention(nn.Module):
         dropout_rate: float = 0.0,
     ):
         super().__init__()
-        # self.self_attn_layer = nn.MultiheadAttention(
-        #     embed_dim=embed_dim,
-        #     num_heads=num_heads,
-        #     dropout=dropout_rate,
-        #     batch_first=True,
-        # )
         self.self_attn_layer = initialize_attention(
             attention_type=attention_type,
             embed_dim=embed_dim,
@@ -241,17 +235,16 @@ class MolecularAttention(nn.Module):
     def forward(
         self, x: types.MixTensor, key_padding_mask: types.MaskTensor
     ) -> types.MixTensor:
-        attn_x, _ = self.self_attn_layer(
+        attn_x, attn_weights = self.self_attn_layer(
             query=x,
             key=x,
             value=x,
             key_padding_mask=key_padding_mask,
-            need_weights=False,
         )
         out = self.addnorm1(x, attn_x)
         if self.add_mlp:
             out = self.addnorm2(out, self.ffn(out))
-        return out
+        return out, attn_weights
 
 
 class MeanAggregation(nn.Module):
@@ -356,7 +349,7 @@ class MixtureBlock(nn.Module):
             if isinstance(layer, nn.Identity):
                 x = layer(x)
             else:
-                x = layer(x, key_padding_mask)
+                x, _ = layer(x, key_padding_mask)
 
         global_emb = self.mol_aggregation(x, key_padding_mask)
         global_emb = self.ffn(global_emb)
