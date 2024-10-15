@@ -22,3 +22,7 @@ The `datasets` folder contains the features used for the RDKit baselines `mixtur
 `scripts_chemix` contains the code to take mixture embeddings to predict the olfactory similarity of two mixtures. 
 
 `scripts_pommix` contains the code that trains both POM and CheMix end-to-end to improve the predictive performance of molecular embeddings generated from the POM.
+
+## Figures
+
+All figures generated in the paper can be found using scripts found in the `figures` folder -- most of them are in `figures.ipynb`. 
