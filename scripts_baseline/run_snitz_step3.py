@@ -7,14 +7,12 @@ sys.path.append(str(base_dir / "src/"))
 
 import seaborn as sns
 from dataloader.dataloader import DatasetLoader, SplitLoader
-from similarity_model.model import AngleSimilarityModel
 
 from xgboost import XGBRegressor
 from sklearn.metrics import root_mean_squared_error, mean_squared_error, r2_score
 from sklearn.feature_selection import SequentialFeatureSelector, VarianceThreshold
-from scipy.stats import pearsonr, kendalltau
+from scipy.stats import pearsonr, kendalltau, zscore
 import torch
-import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
@@ -47,7 +45,7 @@ if __name__ == "__main__":
 
     feat_type = FLAGS.feat_type
 
-    fname = f"random_select_n_features_angle_sim_step1_mix_rdkit2d_mean"
+    fname = f"snitz_step3"
     os.makedirs(fname, exist_ok=True)
 
     dl = DatasetLoader()
@@ -58,8 +56,6 @@ if __name__ == "__main__":
     sl = SplitLoader("random_cv")
     test_results = []
     for id, train, val, test in sl.load_splits(dl.features, dl.labels):
-        select_n_results = {}
-        angle_sim_model = AngleSimilarityModel()
         train_features, train_labels = train
         val_features, val_labels = val
         test_features, test_labels = test
@@ -70,39 +66,36 @@ if __name__ == "__main__":
         val_labels = val_labels.astype(float)
         test_labels = test_labels.astype(float)
 
-        best_rmse = np.inf
-        logger = {}
-        for n in range(2, 200):  # 200
-            select_n_results[n] = {}
-            rmse_list = []
-            for i in range(0, 20000):
-                print(f"id={id}, n={n}, i={i}")
-                # generate index with n features
-                idx_features = np.random.choice(
-                    train_features.shape[1], n, replace=False
-                )
-                # similarity model between mixtures
-                y_train = angle_similarity(
-                    torch.tensor(train_features[:, idx_features, 0]),
-                    torch.tensor(train_features[:, idx_features, 1]),
-                )
-                y_train = y_train.detach().numpy()
-                rmse = root_mean_squared_error(
-                    train_labels.flatten(), y_train.flatten()
-                )
-                rmse_list.append(rmse)
-            select_n_results[n]["rmse_avg"] = np.mean(rmse_list)
-            select_n_results[n]["rmse_std"] = np.std(rmse_list)
-            select_n_results[n]["rmse_avg-std"] = np.mean(rmse_list) - np.std(rmse_list)
+        # select n best features
+        best_n_features = pd.read_csv(f"snitz_step2/best_nth_feature_{id}.csv")
+        best_n_zscore = -zscore(best_n_features["rmse_avg"])
+        # set all negative values to 0
+        best_n_zscore = [max(0, x) for x in best_n_zscore]
+        # get index of positive features
+        positive_features = [i for i, x in enumerate(best_n_zscore) if x > 0]
+        # num of features to select
+        with open(f"./snitz_step1/model_{id}_stats.json") as json_file:
+            select_n = json.load(json_file)
+        n_features = select_n["n_best"]
+        rmse_min = 1e7
+        for i in range(1, 4000):
+            print(f"i={i}")
+            idx_best_features = np.random.choice(positive_features, n_features, replace=False)
+            # similarity model between mixtures
+            y_train = angle_similarity(
+                torch.tensor(train_features[:, idx_best_features, 0]),
+                torch.tensor(train_features[:, idx_best_features, 1]),
+            )
+            y_train = y_train.detach().numpy()
+            rmse = root_mean_squared_error(train_labels.flatten(), y_train.flatten())
+            if rmse < rmse_min:
+                rmse_min = rmse
+                idx_best_features_min = idx_best_features
 
-        # use best n features for prediction
-        n_best = min(
-            select_n_results, key=lambda x: select_n_results[x]["rmse_avg-std"]
-        )
-        idx_features = np.random.choice(train_features.shape[1], n_best, replace=False)
+        logger = {"pearson": -np.nan}
         y_pred = angle_similarity(
-            torch.tensor(test_features[:, idx_features, 0]),
-            torch.tensor(test_features[:, idx_features, 1]),
+            torch.tensor(test_features[:, idx_best_features_min, 0]),
+            torch.tensor(test_features[:, idx_best_features_min, 1]),
         )
         prs, _ = pearsonr(test_labels.flatten(), y_pred.flatten())
         logger["id"] = id
@@ -120,13 +113,8 @@ if __name__ == "__main__":
         logger["kendall"] = kendalltau(test_labels.flatten(), y_pred.flatten())[
             0
         ].astype(float)
-        logger["n_best"] = n_best
+        logger["best_features"] = idx_best_features_min.tolist()
         json.dump(logger, open(f"{fname}/model_{id}_stats.json", "w"), indent=4)
+
         test_results.append(logger)
-        pd.DataFrame(test_results).to_pickle(f"{fname}/all_results.pkl")
-
-        select_n_df = pd.DataFrame.from_dict(select_n_results).T
-        select_n_df["n_features"] = select_n_df.index
-
-        # save results
-        select_n_df.to_csv(f"{fname}/select_n_features_{id}.csv")
+    pd.DataFrame(test_results).to_pickle(f"{fname}/all_results.pkl")

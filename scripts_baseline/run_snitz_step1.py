@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     feat_type = FLAGS.feat_type
 
-    fname = f"best_n_features_angle_sim_step2_mix_rdkit2d_mean"
+    fname = f"snitz_step1"
     os.makedirs(fname, exist_ok=True)
 
     dl = DatasetLoader()
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     sl = SplitLoader("random_cv")
     test_results = []
     for id, train, val, test in sl.load_splits(dl.features, dl.labels):
-        best_n_results = {}
+        select_n_results = {}
         angle_sim_model = AngleSimilarityModel()
         train_features, train_labels = train
         val_features, val_labels = val
@@ -71,27 +71,16 @@ if __name__ == "__main__":
         test_labels = test_labels.astype(float)
 
         best_rmse = np.inf
-        with open(f"./{"random_select_n_features_angle_sim_step1_mix_rdkit2d_mean"}/model_{id}_stats.json") as json_file:
-            select_n = json.load(json_file)
-        n_features = select_n["n_best"]
-        # iterate through features
-        for n in range(0, 200):
-            best_n_results[n] = {}
+        logger = {}
+        for n in range(2, 200):  # 200
+            select_n_results[n] = {}
             rmse_list = []
-            # generate index with n features
-            for i in range(2000):
-                print(f"{n=}, {i=}")
+            for i in range(0, 20000):
+                print(f"id={id}, n={n}, i={i}")
+                # generate index with n features
                 idx_features = np.random.choice(
-                    train_features.shape[1], n_features-1, replace=False
+                    train_features.shape[1], n, replace=False
                 )
-                if n in idx_features:
-                    # add another feature not in the list
-                    idx_features = np.append(
-                        idx_features, np.random.choice(train_features.shape[1])
-                    )
-                else:
-                    # add the nth feature
-                    idx_features = np.append(idx_features, n)
                 # similarity model between mixtures
                 y_train = angle_similarity(
                     torch.tensor(train_features[:, idx_features, 0]),
@@ -102,12 +91,18 @@ if __name__ == "__main__":
                     train_labels.flatten(), y_train.flatten()
                 )
                 rmse_list.append(rmse)
-            best_n_results[n]["rmse_avg"] = np.mean(rmse_list)
-            best_n_results[n]["rmse_std"] = np.std(rmse_list)
+            select_n_results[n]["rmse_avg"] = np.mean(rmse_list)
+            select_n_results[n]["rmse_std"] = np.std(rmse_list)
+            select_n_results[n]["rmse_avg-std"] = np.mean(rmse_list) - np.std(rmse_list)
 
-        logger = {"pearson": -np.nan}
+        # use best n features for prediction
+        n_best = min(
+            select_n_results, key=lambda x: select_n_results[x]["rmse_avg-std"]
+        )
+        idx_features = np.random.choice(train_features.shape[1], n_best, replace=False)
         y_pred = angle_similarity(
-            torch.tensor(test_features[:, :, 0]), torch.tensor(test_features[:, :, 1])
+            torch.tensor(test_features[:, idx_features, 0]),
+            torch.tensor(test_features[:, idx_features, 1]),
         )
         prs, _ = pearsonr(test_labels.flatten(), y_pred.flatten())
         logger["id"] = id
@@ -125,13 +120,13 @@ if __name__ == "__main__":
         logger["kendall"] = kendalltau(test_labels.flatten(), y_pred.flatten())[
             0
         ].astype(float)
-        logger["n_features"] = n_features
+        logger["n_best"] = n_best
         json.dump(logger, open(f"{fname}/model_{id}_stats.json", "w"), indent=4)
-
         test_results.append(logger)
-        best_n_df = pd.DataFrame.from_dict(best_n_results).T
-        best_n_df["nth_feature"] = best_n_df.index
-        # save results
-        best_n_df.to_csv(f"{fname}/best_nth_feature_{id}.csv")
+        pd.DataFrame(test_results).to_pickle(f"{fname}/all_results.pkl")
 
-    pd.DataFrame(test_results).to_pickle(f"{fname}/all_results.pkl")
+        select_n_df = pd.DataFrame.from_dict(select_n_results).T
+        select_n_df["n_features"] = select_n_df.index
+
+        # save results
+        select_n_df.to_csv(f"{fname}/select_n_features_{id}.csv")

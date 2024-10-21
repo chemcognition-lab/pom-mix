@@ -43,7 +43,7 @@ def angle_similarity(a, b):
 if __name__ == "__main__":
     feat_type = FLAGS.feat_type
 
-    fname = f"all_features_angle_sim_mix_rdkit2d_mean"
+    fname = f"snitz_similarity"
     os.makedirs(fname, exist_ok=True)
 
     dl = DatasetLoader()
