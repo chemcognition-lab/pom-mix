@@ -299,9 +299,7 @@ if __name__ == "__main__":
         legend=False,
     )
 
-    r, _ = pearsonr(
-        label_df["POMMix Cosine Distance"], label_df["Experimental Values"]
-    )
+    r, _ = pearsonr(label_df["POMMix Cosine Distance"], label_df["Experimental Values"])
     snitz_r, _ = pearsonr(
         label_df[label_df["Dataset"] == "Snitz"]["POMMix Cosine Distance"],
         label_df[label_df["Dataset"] == "Snitz"]["Experimental Values"],

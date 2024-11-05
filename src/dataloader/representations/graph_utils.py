@@ -10,7 +10,6 @@ from descriptastorus.descriptors.DescriptorGenerator import MakeGenerator
 RDLogger.DisableLog("rdApp.*")
 
 
-
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 

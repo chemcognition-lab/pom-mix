@@ -1,7 +1,6 @@
 from typing import Optional
 
 
-
 import torch.nn as nn
 import torch_geometric as pyg
 from torch_geometric.nn import Linear
