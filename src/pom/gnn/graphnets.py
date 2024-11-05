@@ -1,4 +1,4 @@
-from typing import Union, List, Optional
+from typing import Union, Optional
 
 import json
 import numpy as np
@@ -6,8 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch_geometric as pyg
-from torch_geometric.utils import scatter, to_dense_batch
-from torch_geometric.nn import MetaLayer, Linear, GATConv, GAT
+from torch_geometric.nn import MetaLayer, Linear, GAT
 from torch_geometric.nn.aggr import MultiAggregation
 
 # and (https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.models.MetaLayer.html#torch_geometric.nn.models.MetaLayer)

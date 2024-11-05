@@ -1,13 +1,8 @@
-from typing import Tuple, Optional
 
-import os, sys
-import random
-import seaborn as sns
+import sys
 import pandas as pd
 import numpy as np
 
-import torch
-import torch.nn.functional as F
 
 from pathlib import Path
 
@@ -15,12 +10,9 @@ script_dir = Path(__file__).parent
 base_dir = Path(*script_dir.parts[:-2])
 sys.path.append(str(base_dir / "src/"))
 
-import rdkit.Chem as Chem
 
 from pommix_utils import get_embeddings_from_smiles, pna
-from dataloader import DatasetLoader
 from dataloader.representations.features import rdkit2d_normalized_features
-from typing import Tuple, Optional
 
 
 if __name__ == "__main__":

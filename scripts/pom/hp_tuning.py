@@ -9,14 +9,10 @@ sys.path.append(str(base_dir / "src/"))
 # basic dependencies
 from ml_collections import ConfigDict
 import tqdm
-import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
 import numpy as np
-import seaborn as sns
 import pandas as pd
 from skmultilearn.model_selection import iterative_train_test_split
 
-import torch.nn as nn
 
 from functools import partial
 
@@ -29,17 +25,15 @@ from pom import EndToEndModule
 from pom.data import GraphDataset
 from pom.early_stop import EarlyStopping
 from pom.gnn.graphnets import GraphNets
-from pom.gnn.graph_utils import get_graph_degree_histogram, get_pooling_function
 
 # glm
-from prediction_head.data import TaskType, get_activation, get_loss_fn
+from prediction_head.data import get_loss_fn
 from prediction_head.GLM import GLM
 
 # optuna for tuning
 import optuna
 
 import torch
-import torchinfo
 from torch_geometric.loader import DataLoader as pygdl
 
 

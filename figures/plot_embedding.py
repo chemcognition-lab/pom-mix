@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -10,17 +9,13 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 
-from dataloader import DatasetLoader
 from dataloader.representations.graph_utils import EDGE_DIM, NODE_DIM, from_smiles
 from pom.gnn.graphnets import GraphNets
 from chemix import build_chemix, get_mixture_smiles
 from pommix_utils import pna
 
 import torch
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import torchmetrics
 import json
 from ml_collections import ConfigDict
 from torch_geometric.data import Batch
@@ -66,7 +61,7 @@ if __name__ == "__main__":
     chemix_path = base_dir / "scripts_chemix/results/random_train_val/model"
     if augment:
         chemix_path = Path(str(chemix_path) + "_augmented")
-    hp_mix = ConfigDict(json.load(open(chemix_path / f"hparams_chemix.json", "r")))
+    hp_mix = ConfigDict(json.load(open(chemix_path / "hparams_chemix.json", "r")))
     chemix = build_chemix(config=hp_mix.chemix)
     chemix.load_state_dict(torch.load(chemix_path / "random_train_val.pt"))
     chemix.eval()
@@ -87,7 +82,7 @@ if __name__ == "__main__":
         torch.load(pommix_path / "random_train_val_gnn_embedder.pt")
     )
     embedder.eval()
-    hp_mix = ConfigDict(json.load(open(pommix_path / f"hparams_chemix.json", "r")))
+    hp_mix = ConfigDict(json.load(open(pommix_path / "hparams_chemix.json", "r")))
     chemix = build_chemix(config=hp_mix.chemix)
     chemix.load_state_dict(torch.load(pommix_path / "random_train_val_chemix.pt"))
     chemix.eval()
@@ -290,14 +285,14 @@ if __name__ == "__main__":
         ax.set_xlabel(f"{feat_name} Cosine Distance")
         ax.set_ylabel("Perceptual Similarity")
 
-    plt.savefig(f"all_embedding_cosine_distance.png", bbox_inches="tight")
-    plt.savefig(f"all_embedding_cosine_distance.svg", bbox_inches="tight", format="svg")
+    plt.savefig("all_embedding_cosine_distance.png", bbox_inches="tight")
+    plt.savefig("all_embedding_cosine_distance.svg", bbox_inches="tight", format="svg")
 
     fig, ax = plt.subplots(1, 1, figsize=(4, 4), dpi=180)
 
     sns.scatterplot(
         label_df,
-        x=f"POMMix Cosine Distance",
+        x="POMMix Cosine Distance",
         y="Experimental Values",
         hue="Dataset",
         ax=ax,
@@ -305,18 +300,18 @@ if __name__ == "__main__":
     )
 
     r, _ = pearsonr(
-        label_df[f"POMMix Cosine Distance"], label_df["Experimental Values"]
+        label_df["POMMix Cosine Distance"], label_df["Experimental Values"]
     )
     snitz_r, _ = pearsonr(
-        label_df[label_df["Dataset"] == "Snitz"][f"POMMix Cosine Distance"],
+        label_df[label_df["Dataset"] == "Snitz"]["POMMix Cosine Distance"],
         label_df[label_df["Dataset"] == "Snitz"]["Experimental Values"],
     )
     bushdid_r, _ = pearsonr(
-        label_df[label_df["Dataset"] == "Bushdid"][f"POMMix Cosine Distance"],
+        label_df[label_df["Dataset"] == "Bushdid"]["POMMix Cosine Distance"],
         label_df[label_df["Dataset"] == "Bushdid"]["Experimental Values"],
     )
     ravia_r, _ = pearsonr(
-        label_df[label_df["Dataset"] == "Ravia"][f"POMMix Cosine Distance"],
+        label_df[label_df["Dataset"] == "Ravia"]["POMMix Cosine Distance"],
         label_df[label_df["Dataset"] == "Ravia"]["Experimental Values"],
     )
     ax.text(
@@ -333,12 +328,12 @@ if __name__ == "__main__":
     ax.set_ylim([0, 1])
     ax.set_xlim([0, 2])
     # ax.set_title(feat_name)
-    ax.set_xlabel(f"POMMix Cosine Distance")
+    ax.set_xlabel("POMMix Cosine Distance")
     ax.set_ylabel("Perceptual Similarity")
 
     label_df.to_csv("embeddings.csv", index=False)
 
-    plt.savefig(f"pommix_embedding_cosine_distance.png", bbox_inches="tight")
+    plt.savefig("pommix_embedding_cosine_distance.png", bbox_inches="tight")
     plt.savefig(
-        f"pommix_embedding_cosine_distance.svg", bbox_inches="tight", format="svg"
+        "pommix_embedding_cosine_distance.svg", bbox_inches="tight", format="svg"
     )

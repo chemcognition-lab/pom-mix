@@ -8,10 +8,8 @@ sys.path.append(str(base_dir / "src/"))
 
 # basic dependencies
 from ml_collections import ConfigDict
-import json
 import tqdm
 import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
 import numpy as np
 import seaborn as sns
 import pandas as pd
@@ -32,7 +30,6 @@ from prediction_head.data import TaskType, get_loss_fn
 from prediction_head.GLM import GLMStructured, TaskSpec
 
 import torch
-import torchinfo
 from torch_geometric.loader import DataLoader as pygdl
 
 from argparse import ArgumentParser

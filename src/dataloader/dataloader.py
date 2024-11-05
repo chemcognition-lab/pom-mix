@@ -1,5 +1,5 @@
 import ast
-import os, sys
+import sys
 
 sys.path.append("..")
 
@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Callable, List, Optional, Union
 
 import numpy as np
-import seaborn as sns
 import pandas as pd
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 import itertools
@@ -267,9 +266,9 @@ class DatasetLoader:
         elif representation in ["mix_rdkit2d", "mix_rdkit2d_mean"]:
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
             fname = (
-                f"mixtures/mixture_rdkit_definitions_clean.csv"
+                "mixtures/mixture_rdkit_definitions_clean.csv"
                 if representation == "mix_rdkit2d"
-                else f"mixtures/mixture_rdkit_mean_definitions_clean.csv"
+                else "mixtures/mixture_rdkit_mean_definitions_clean.csv"
             )
             rdkit_df = pd.read_csv(DATASET_DIR / fname)
 

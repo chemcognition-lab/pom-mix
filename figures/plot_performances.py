@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -6,9 +5,7 @@ script_dir = Path(__file__).parent
 base_dir = Path(*script_dir.parts[:-1])
 sys.path.append(str(base_dir / "src/"))
 
-from pommix_utils import bootstrap_ci
 from chemix.utils import TORCH_METRIC_FUNCTIONS
-from dataloader import DatasetLoader, SplitLoader
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -211,7 +208,7 @@ if __name__ == "__main__":
 
         # axs[i].locator_params(axis='x', nbins=7)
         axs[i].set_ylabel(f"{metric_name[metric]}")
-        axs[i].set_xlabel(f"")
+        axs[i].set_xlabel("")
 
     # Adjust layout and display the plot
     plt.savefig("performance_lso_models.svg", format="svg", bbox_inches="tight")

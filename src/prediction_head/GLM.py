@@ -5,8 +5,6 @@ from typing import Optional
 from pathlib import Path
 import sys
 
-from sklearn.metrics import f1_score
-from sklearn.preprocessing import OneHotEncoder
 
 root_path = Path(__file__).parent.parent.resolve()
 sys.path.append(str(root_path))
@@ -14,7 +12,6 @@ from prediction_head.data import (
     TaskType,
     TaskSpec,
     get_activation,
-    get_loss_fn_dict,
     get_metrics_dict,
     get_loss_fn_dict,
     get_mask,
@@ -26,7 +23,6 @@ from torch import nn
 import numpy as np
 import torch
 import tqdm
-import functools
 import pandas as pd
 
 
@@ -190,4 +186,4 @@ def train_loop(
         log["val_metric"].append(None)
         log["dataset"].append(name)
     log = pd.DataFrame(log)
-    log.to_csv(f"results/training.csv", index=False)
+    log.to_csv("results/training.csv", index=False)

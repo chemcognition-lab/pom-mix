@@ -1,9 +1,9 @@
-import sys, os
+import sys
+import os
 import copy
 import json
 import torch
 import numpy as np
-from torchinfo import summary
 from sklearn.model_selection import train_test_split
 
 from pathlib import Path

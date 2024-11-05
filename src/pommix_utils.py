@@ -1,7 +1,5 @@
-import sys
 from typing import Optional, Iterable
 
-from pathlib import Path
 
 from dataloader.representations import graph_utils
 from pom.gnn import GraphNets
@@ -12,9 +10,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import seaborn as sns
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 from matplotlib import font_manager
-import pandas as pd
 
 import torch
 from torch_geometric.loader import DataLoader as pygdl

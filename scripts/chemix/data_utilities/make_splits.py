@@ -1,8 +1,7 @@
 from typing import Tuple, Optional
 
-import os, sys
-import random
-import seaborn as sns
+import os
+import sys
 import pandas as pd
 import numpy as np
 
@@ -231,7 +230,7 @@ def create_lso_molecule_identity_splits(
 
 
 if __name__ == "__main__":
-    DATASET_DIR = base_dir / Path(f"datasets/mixtures")
+    DATASET_DIR = base_dir / Path("datasets/mixtures")
     OUTPUT_DIR = DATASET_DIR / "splits/"
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -246,8 +245,8 @@ if __name__ == "__main__":
         list(range(len(df))), test_size=0.2, random_state=seed, stratify=dataset_id
     )
     np.savez(
-        OUTPUT_DIR / f"random_train_val.npz",
-        identifier=f"random_train_val",
+        OUTPUT_DIR / "random_train_val.npz",
+        identifier="random_train_val",
         training=train_idx,
         validation=test_idx,
         testing=test_idx,

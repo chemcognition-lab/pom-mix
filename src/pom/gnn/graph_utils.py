@@ -1,7 +1,7 @@
 import torch
 from torch_geometric.nn import global_mean_pool, global_add_pool
 from torch_geometric.utils import degree
-from torch_geometric.nn.aggr import MultiAggregation, DegreeScalerAggregation
+from torch_geometric.nn.aggr import DegreeScalerAggregation
 
 from ..data import GraphDataset
 

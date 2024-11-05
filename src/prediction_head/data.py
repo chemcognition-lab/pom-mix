@@ -1,20 +1,16 @@
 # sets the path to the root of the repository
 from pathlib import Path
 import sys
-from typing import Dict
 
 root_path = Path(__file__).parent.parent.resolve()
 sys.path.append(str(root_path))
 
-import pandas as pd
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 import torch
 from torch import nn
 import numpy as np
-import sklearn
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler
 import enum
 from sklearn.metrics import (
     r2_score,
@@ -24,7 +20,6 @@ from sklearn.metrics import (
 )
 import torchmetrics.functional as F
 from scipy.stats import kendalltau, spearmanr
-from prediction_head.loss import FocalLoss
 import functools
 import dataclasses
 

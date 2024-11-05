@@ -1,8 +1,7 @@
-from typing import Optional, List, Any
+from typing import Any
 
 import torch
 import torch.nn as nn
-from torch_geometric.loader import DataLoader as pygdl
 import torchmetrics.functional as F
 
 import random

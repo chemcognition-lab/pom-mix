@@ -16,14 +16,12 @@ sys.path.append(str(base_dir / "src/"))
 
 import json
 from argparse import ArgumentParser
-from pprint import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import torch
-import torch.nn as nn
 import torchmetrics.functional as F
 from torch.utils.data import TensorDataset, DataLoader
 from torch_geometric.data import Batch
@@ -37,7 +35,6 @@ from dataloader import DatasetLoader, SplitLoader
 from dataloader.representations.graph_utils import EDGE_DIM, NODE_DIM, from_smiles
 
 # from pom.utils import split_into_batches
-from pommix_utils import get_embeddings_from_smiles
 from pom.early_stop import EarlyStopping
 from pom.gnn.graphnets import GraphNets
 
@@ -126,7 +123,7 @@ if __name__ == "__main__":
     print(f"Running on: {device}")
 
     # extract hyperparameters and save again in the folder
-    hp_mix = ConfigDict(json.load(open(chemix_path / f"hparams_chemix.json", "r")))
+    hp_mix = ConfigDict(json.load(open(chemix_path / "hparams_chemix.json", "r")))
     hp_mix.lr = FLAGS.mix_lr
     with open(fname / "hparams_chemix.json", "w") as f:
         f.write(hp_mix.to_json(indent=4))

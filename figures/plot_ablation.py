@@ -1,4 +1,3 @@
-import os
 import sys
 import re
 from pathlib import Path
@@ -12,7 +11,6 @@ from chemix.utils import TORCH_METRIC_FUNCTIONS
 from dataloader import DatasetLoader, SplitLoader
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
 
 import torch

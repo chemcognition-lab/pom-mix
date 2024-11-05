@@ -1,10 +1,9 @@
 from descriptastorus.descriptors.DescriptorGenerator import MakeGenerator
 from rdkit.Chem import MolFromSmiles
 from mordred import Calculator, descriptors
-from typing import List, Optional
+from typing import List
 import numpy as np
 import logging
-import pandas as pd
 
 
 from rdkit import RDLogger
@@ -38,7 +37,7 @@ def morgan_fingerprints(
     :return: array of shape [len(smiles), 2048] with ecfp featurised molecules
 
     """
-    generator = MakeGenerator((f"Morgan3",))
+    generator = MakeGenerator(("Morgan3",))
     fps = np.array([parse_status(generator, x) for x in smiles])
     return fps
 
@@ -54,7 +53,7 @@ def rdkit2d_normalized_features(
     :return: array of shape [len(smiles), 200] with featurised molecules
 
     """
-    generator = MakeGenerator((f"rdkit2dhistogramnormalized",))
+    generator = MakeGenerator(("rdkit2dhistogramnormalized",))
     fps = np.array([parse_status(generator, x) for x in smiles])
     return fps
 

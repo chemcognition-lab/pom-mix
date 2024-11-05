@@ -1,13 +1,7 @@
-from typing import List, Iterable, Union, Optional, Callable
+from typing import Optional
 
-import numpy as np
-import rdkit.Chem.AllChem as Chem
-import json
 
-from . import utils
 
-import torch
-from torch.utils.data import Dataset
 import torch.nn as nn
 import torch_geometric as pyg
 from torch_geometric.nn import Linear

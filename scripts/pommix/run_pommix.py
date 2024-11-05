@@ -16,7 +16,6 @@ sys.path.append(str(base_dir / "src/"))
 
 import json
 from argparse import ArgumentParser
-from pprint import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -151,7 +150,7 @@ if __name__ == "__main__":
     with open(fname / "hparams_graphnets.json", "w") as f:
         f.write(hp_gnn.to_json(indent=4))
 
-    hp_mix = ConfigDict(json.load(open(chemix_path / f"hparams_chemix.json", "r")))
+    hp_mix = ConfigDict(json.load(open(chemix_path / "hparams_chemix.json", "r")))
     hp_mix.lr = FLAGS.mix_lr
     hp_mix.chemix.regressor.no_bias = no_bias
     with open(fname / "hparams_chemix.json", "w") as f:

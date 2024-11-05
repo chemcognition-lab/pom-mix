@@ -1,20 +1,17 @@
-import sys, os
+import sys
+import os
 from pathlib import Path
 
 script_dir = Path(__file__).parent
 base_dir = Path(*script_dir.parts[:-1])
 sys.path.append(str(base_dir / "src/"))
 
-import seaborn as sns
 from dataloader.dataloader import DatasetLoader, SplitLoader
 from similarity_model.model import AngleSimilarityModel
 
-from xgboost import XGBRegressor
-from sklearn.metrics import root_mean_squared_error, mean_squared_error, r2_score
-from sklearn.feature_selection import SequentialFeatureSelector, VarianceThreshold
+from sklearn.metrics import root_mean_squared_error, r2_score
 from scipy.stats import pearsonr, kendalltau
 import torch
-import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
@@ -47,12 +44,12 @@ if __name__ == "__main__":
 
     feat_type = FLAGS.feat_type
 
-    fname = f"snitz_step1"
+    fname = "snitz_step1"
     os.makedirs(fname, exist_ok=True)
 
     dl = DatasetLoader()
     dl.load_dataset("mixtures")
-    dl.featurize(f"mix_rdkit2d_mean")
+    dl.featurize("mix_rdkit2d_mean")
 
     # load splits
     sl = SplitLoader("random_cv")

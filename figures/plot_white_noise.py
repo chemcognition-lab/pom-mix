@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -14,23 +13,17 @@ from dataloader import DatasetLoader
 from dataloader.representations.graph_utils import EDGE_DIM, NODE_DIM, from_smiles
 from pom.gnn.graphnets import GraphNets
 from chemix import build_chemix, get_mixture_smiles
-from pommix_utils import pna
 
 import torch
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import torchmetrics
 import json
 from ml_collections import ConfigDict
 from torch_geometric.data import Batch
 
-from umap import UMAP
-from sklearn.decomposition import PCA
 
 # from scipy.spatial.distance import cosine
 from scipy.stats import linregress
 from sklearn.metrics.pairwise import cosine_distances as cosine_measure
-from scipy.stats import pearsonr
 
 DATASET_DIR = base_dir / "datasets"
 
@@ -62,7 +55,7 @@ if __name__ == "__main__":
         torch.load(pommix_path / "random_train_val_gnn_embedder.pt")
     )
     embedder.eval()
-    hp_mix = ConfigDict(json.load(open(pommix_path / f"hparams_chemix.json", "r")))
+    hp_mix = ConfigDict(json.load(open(pommix_path / "hparams_chemix.json", "r")))
     chemix = build_chemix(config=hp_mix.chemix)
     chemix.load_state_dict(torch.load(pommix_path / "random_train_val_chemix.pt"))
     chemix.eval()

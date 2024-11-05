@@ -1,11 +1,11 @@
-import sys, os
+import sys
+import os
 from pathlib import Path
 
 script_dir = Path(__file__).parent
 base_dir = Path(*script_dir.parts[:-1])
 sys.path.append(str(base_dir / "src/"))
 
-import seaborn as sns
 from dataloader import DatasetLoader, SplitLoader
 from pommix_utils import pna
 
@@ -14,7 +14,6 @@ from sklearn.metrics import root_mean_squared_error, mean_squared_error, r2_scor
 from scipy.stats import pearsonr, kendalltau
 
 import numpy as np
-import pandas as pd
 import json
 
 from argparse import ArgumentParser

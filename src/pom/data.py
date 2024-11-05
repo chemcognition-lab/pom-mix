@@ -1,10 +1,8 @@
 import torch
 from torch.utils.data import Dataset
 
-from typing import List, Iterable, Union, Optional, Callable
+from typing import List, Iterable, Union
 
-import numpy as np
-import rdkit.Chem.AllChem as Chem
 import torch_geometric as pyg
 
 

@@ -1,7 +1,7 @@
 from torch import nn, Tensor
 import torch
 from torch.nn import _reduction as _Reduction
-from typing import Callable, Optional
+from typing import Optional
 import torch.nn.functional as F
 
 
