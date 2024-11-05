@@ -12,6 +12,7 @@ from pathlib import Path
 
 script_dir = Path(__file__).parent
 base_dir = Path(*script_dir.parts[:-2])
+print(base_dir)
 sys.path.append(str(base_dir / "src/"))
 
 import json
