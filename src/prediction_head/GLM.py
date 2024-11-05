@@ -2,13 +2,7 @@ from __future__ import annotations
 
 # sets the path to the root of the repository
 from typing import Optional
-from pathlib import Path
-import sys
-
-
-root_path = Path(__file__).parent.parent.resolve()
-sys.path.append(str(root_path))
-from prediction_head.data import (
+from .data import (
     TaskType,
     TaskSpec,
     get_activation,

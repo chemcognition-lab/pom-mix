@@ -2,16 +2,17 @@ from typing import List, Any
 
 import rdkit.Chem as Chem
 from rdkit import RDLogger
-
-RDLogger.DisableLog("rdApp.*")
-
 import warnings
-
-warnings.simplefilter(action="ignore", category=FutureWarning)
-
 import torch
 from torch_geometric.data import Data
 from descriptastorus.descriptors.DescriptorGenerator import MakeGenerator
+
+RDLogger.DisableLog("rdApp.*")
+
+
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
 
 MAX_ATOMIC_NUM = 53
 ATOM_FEATURES = {

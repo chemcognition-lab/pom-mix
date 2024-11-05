@@ -149,7 +149,7 @@ def set_visualization_style():
         font_manager.fontManager.addfont(font_manager.findfont(font))
         mpl.rcParams["font.sans-serif"] = [font.get_name()]
         print("Load preferred font.")
-    except:
+    except ValueError:
         mpl.rcParams["font.family"] = "sans-serif"
         mpl.rcParams["font.sans-serif"] = "DejaVu Sans"
         print("Using default font.")

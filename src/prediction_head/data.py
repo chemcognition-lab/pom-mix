@@ -1,10 +1,6 @@
 # sets the path to the root of the repository
 from pathlib import Path
 import sys
-
-root_path = Path(__file__).parent.parent.resolve()
-sys.path.append(str(root_path))
-
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 import torch

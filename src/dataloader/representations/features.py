@@ -4,12 +4,12 @@ from mordred import Calculator, descriptors
 from typing import List
 import numpy as np
 import logging
-
+import warnings
 
 from rdkit import RDLogger
 
 RDLogger.DisableLog("rdApp.*")
-import warnings
+
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 

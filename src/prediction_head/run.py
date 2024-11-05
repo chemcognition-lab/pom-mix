@@ -1,12 +1,5 @@
 # sets the path to the root of the repository
-import sys
-import os
-
-
-root_path = os.path.dirname(os.path.abspath(""))
-sys.path.append(str(root_path))
-# Import packages
-from prediction_head.data import (
+from .data import (
     get_regression_dataset,
     get_binary_dataset,
     get_multilabel_dataset,
@@ -15,7 +8,7 @@ from prediction_head.data import (
     get_zeroinflated_exponential_dataset,
 )
 
-from prediction_head.GLM import train_loop
+from .GLM import train_loop
 
 # load data
 datasets: dict = {
