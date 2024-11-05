@@ -55,7 +55,6 @@ def train_one_epoch(
     metrics: torchmetrics.MetricCollection,
     device: torch.device,
 ):
-
     train_loss = 0
     num_batch = 0
 
@@ -89,7 +88,6 @@ def validate_one_epoch(
     metrics: torchmetrics.MetricCollection,
     device: torch.device,
 ):
-
     val_loss = 0
     num_batch = 0
 

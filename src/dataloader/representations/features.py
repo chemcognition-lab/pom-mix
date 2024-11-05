@@ -7,15 +7,17 @@ import logging
 import pandas as pd
 
 
-
 from rdkit import RDLogger
+
 RDLogger.DisableLog("rdApp.*")
 import warnings
+
 warnings.simplefilter(action="ignore", category=FutureWarning)
+
 
 def parse_status(generator, smiles):
     results = generator.process(smiles)
-    try: 
+    try:
         processed, features = results[0], results[1:]
         if processed is None:
             logging.warning("Descriptastorus cannot process smiles %s", smiles)
@@ -40,6 +42,7 @@ def morgan_fingerprints(
     fps = np.array([parse_status(generator, x) for x in smiles])
     return fps
 
+
 def rdkit2d_normalized_features(
     smiles: List[str],
 ) -> np.ndarray:
@@ -55,7 +58,8 @@ def rdkit2d_normalized_features(
     fps = np.array([parse_status(generator, x) for x in smiles])
     return fps
 
-def mordred_descriptors(    
+
+def mordred_descriptors(
     smiles: List[str],
 ) -> np.ndarray:
     """

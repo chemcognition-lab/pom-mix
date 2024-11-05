@@ -56,9 +56,9 @@ class GLMStructured(nn.Module):
 
     def __init__(self, input_dim: int, tasks: dict[TaskSpec]):
         super(GLMStructured, self).__init__()
-        self.models = nn.ModuleDict({
-            name: GLM.from_spec(input_dim, task) for name, task in tasks.items()
-        })
+        self.models = nn.ModuleDict(
+            {name: GLM.from_spec(input_dim, task) for name, task in tasks.items()}
+        )
 
     def forward(self, x, dataset_name: Optional[str] = None):
         if dataset_name is None:

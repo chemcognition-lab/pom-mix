@@ -80,7 +80,9 @@ if __name__ == "__main__":
         rmse_min = 1e7
         for i in range(1, 4000):
             print(f"i={i}")
-            idx_best_features = np.random.choice(positive_features, n_features, replace=False)
+            idx_best_features = np.random.choice(
+                positive_features, n_features, replace=False
+            )
             # similarity model between mixtures
             y_train = angle_similarity(
                 torch.tensor(train_features[:, idx_best_features, 0]),

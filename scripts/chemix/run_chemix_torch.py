@@ -10,7 +10,7 @@ from pathlib import Path
 
 script_dir = Path(__file__).parent
 base_dir = Path(*script_dir.parts[:-1])
-sys.path.append( str(base_dir / 'src/') )
+sys.path.append(str(base_dir / "src/"))
 
 from chemix.model import build_chemix
 from chemix.data import dataset_to_torch
@@ -23,14 +23,13 @@ from omegaconf import OmegaConf
 def main(
     config,
     experiment_name,
-    wandb_logger = None,
+    wandb_logger=None,
 ):
-
     config = copy.deepcopy(config)
 
     torch.manual_seed(config.seed)
     device = torch.device(config.device)
-    print(f'Running on: {device}')
+    print(f"Running on: {device}")
 
     root_dir = config.root_dir
     os.makedirs(root_dir, exist_ok=True)
@@ -39,7 +38,12 @@ def main(
     dl = DatasetLoader()
     dl.load_dataset("mixtures")
 
-    train_idx, test_idx = train_test_split(np.arange(len(dl.features)), test_size=0.2, random_state=0, stratify=dl.dataset_id)
+    train_idx, test_idx = train_test_split(
+        np.arange(len(dl.features)),
+        test_size=0.2,
+        random_state=0,
+        stratify=dl.dataset_id,
+    )
 
     dl.featurize("mix_pom_embeddings")
 
@@ -64,7 +68,7 @@ def main(
     # summary(model, input_size=(config.batch_size, 43, config.chemix.pom_input.embed_dim, config.chemix.pom_input.num_mix))
 
     # Save hyper parameters
-    with open(f'{root_dir}/hparams_chemix_{experiment_name}.json', 'w') as f:
+    with open(f"{root_dir}/hparams_chemix_{experiment_name}.json", "w") as f:
         # f.write(json.dumps(OmegaConf.to_container(config.chemix, resolve=True)))
         f.write(json.dumps(OmegaConf.to_container(config, resolve=True)))
 
@@ -73,7 +77,7 @@ def main(
         root_dir=root_dir,
         model=model,
         train_loader=train_loader,
-        val_loader=val_loader, 
+        val_loader=val_loader,
         loss_type=config.loss_type,
         lr=config.lr,
         device=device,

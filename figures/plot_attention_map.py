@@ -4,7 +4,7 @@ from pathlib import Path
 
 script_dir = Path(__file__).parent
 base_dir = Path(*script_dir.parts[:-1])
-sys.path.append( str(base_dir / 'src/') )
+sys.path.append(str(base_dir / "src/"))
 
 import copy
 import torch
@@ -27,19 +27,20 @@ from pommix_utils import set_visualization_style
 def main(
     config,
     checkpoint_path,
-    interesting_idx = None,
+    interesting_idx=None,
 ):
-
     # Plot style
     set_visualization_style()
     green_color = sns.color_palette("Dark2")[4]
-    cmap = mcolors.LinearSegmentedColormap.from_list("white_to_green", [(1, 1, 1), green_color])
+    cmap = mcolors.LinearSegmentedColormap.from_list(
+        "white_to_green", [(1, 1, 1), green_color]
+    )
 
     config = copy.deepcopy(config)
 
     torch.manual_seed(config.seed)
     device = torch.device(config.device)
-    print(f'Running on: {device}')
+    print(f"Running on: {device}")
 
     root_dir = config.root_dir
     os.makedirs(root_dir, exist_ok=True)
@@ -53,8 +54,17 @@ def main(
         good_size_mix_idx = [interesting_idx]
         smiles_good_size = [dl.features[interesting_idx]]
     else:
-        good_size_mix_idx = [i for i, mix in enumerate(dl.features) if len(mix[0]) <= 10 and len(mix[1]) <= 10 and len(mix[0]) >= 4 and len(mix[1]) >= 4]
-        smiles_good_size = [mix for i, mix in enumerate(dl.features) if i in good_size_mix_idx]
+        good_size_mix_idx = [
+            i
+            for i, mix in enumerate(dl.features)
+            if len(mix[0]) <= 10
+            and len(mix[1]) <= 10
+            and len(mix[0]) >= 4
+            and len(mix[1]) >= 4
+        ]
+        smiles_good_size = [
+            mix for i, mix in enumerate(dl.features) if i in good_size_mix_idx
+        ]
 
     dl = DatasetLoader()
     dl.load_dataset("mixtures")
@@ -69,7 +79,9 @@ def main(
 
     # Model
     model = build_chemix(config=config.chemix).to(device=device)
-    model.load_state_dict(torch.load(checkpoint_path, map_location=torch.device(device)))
+    model.load_state_dict(
+        torch.load(checkpoint_path, map_location=torch.device(device))
+    )
 
     model.eval()
 
@@ -78,7 +90,7 @@ def main(
             features, _ = batch
 
             # project
-            key_padding_all =[]
+            key_padding_all = []
             x_all = []
             attn_weights_all = []
             for mix in torch.unbind(features, dim=-1):
@@ -100,11 +112,10 @@ def main(
 
     smiles_mix = []
     for i, mix_idx in enumerate(good_size_mix_idx):
-
         # Mix 1
         print("mix1")
 
-        pad_start = np.argmax(final_kp[i,:,0].cpu().numpy())
+        pad_start = np.argmax(final_kp[i, :, 0].cpu().numpy())
 
         attn_weights = final_attn_weights.cpu().numpy()[i, 0, :pad_start, :pad_start, 0]
 
@@ -116,7 +127,7 @@ def main(
             plt.figure(figsize=(10, 8))
             sns.heatmap(attn_weights, cmap=cmap, vmax=1, vmin=0)
 
-            plt.title('Attention Heatmap', fontsize=20)
+            plt.title("Attention Heatmap", fontsize=20)
             plt.ylabel("Queries", fontsize=18)
             plt.xlabel("Keys", fontsize=18)
             plt.savefig(f"./attention_heatmap_mix1_{mix_idx}.svg")
@@ -127,7 +138,7 @@ def main(
 
         # Mix 2
         print("mix2")
-        pad_start = np.argmax(final_kp[i,:,1].cpu().numpy())
+        pad_start = np.argmax(final_kp[i, :, 1].cpu().numpy())
 
         attn_weights = final_attn_weights.cpu().numpy()[i, 0, :pad_start, :pad_start, 1]
 
@@ -139,7 +150,7 @@ def main(
             plt.figure(figsize=(10, 8))
             sns.heatmap(attn_weights, cmap=cmap, vmax=1, vmin=0)
 
-            plt.title('Attention Heatmap')
+            plt.title("Attention Heatmap")
             plt.ylabel("Queries")
             plt.xlabel("Keys")
             plt.savefig(f"./attention_heatmap_mix2_{mix_idx}.svg")
@@ -147,11 +158,19 @@ def main(
             plt.close()
             smiles_mix.append(smiles_list)
 
+
 if __name__ == "__main__":
-    parser = ArgumentParser(description='Process some model parameters.')
-    parser.add_argument('--run_name', help='The name of the run to identify model files.')
-    parser.add_argument('--model_dir', help='Directory containing the model files.')
-    parser.add_argument('--interesting_idx', action="store_true", default=86, help='Pick a mixture pair.')
+    parser = ArgumentParser(description="Process some model parameters.")
+    parser.add_argument(
+        "--run_name", help="The name of the run to identify model files."
+    )
+    parser.add_argument("--model_dir", help="Directory containing the model files.")
+    parser.add_argument(
+        "--interesting_idx",
+        action="store_true",
+        default=86,
+        help="Pick a mixture pair.",
+    )
 
     args = parser.parse_args()
 

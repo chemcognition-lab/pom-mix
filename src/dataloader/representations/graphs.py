@@ -1,5 +1,5 @@
 """
-Contains methods to generate graph representations 
+Contains methods to generate graph representations
 of molecules, chemical reactions and proteins.
 
 # Inspired by gauche DataLoader
@@ -28,9 +28,7 @@ def graphein_molecular_graphs(
 
     import graphein.molecule as gm
 
-    return [
-        gm.construct_graph(smiles=i, config=graphein_config) for i in smiles
-    ]
+    return [gm.construct_graph(smiles=i, config=graphein_config) for i in smiles]
 
 
 def graphein_molecular_graphs(
@@ -49,12 +47,11 @@ def graphein_molecular_graphs(
 
     import graphein.molecule as gm
 
-    return [
-        gm.construct_graph(smiles=i, config=graphein_config) for i in smiles
-    ]
+    return [gm.construct_graph(smiles=i, config=graphein_config) for i in smiles]
+
 
 def pyg_molecular_graphs(
-    smiles: List[str], 
+    smiles: List[str],
 ) -> List[Data]:
     """
     Convers a list of SMILES strings into PyGeometric molecular graphs.
@@ -66,9 +63,7 @@ def pyg_molecular_graphs(
 
     from torch_geometric.utils import from_smiles
 
-    return [
-        from_smiles(smiles=i) for i in smiles
-    ]
+    return [from_smiles(smiles=i) for i in smiles]
 
 
 def molecular_graphs(
@@ -81,6 +76,4 @@ def molecular_graphs(
 
     from .graph_utils import from_smiles
 
-    return [
-        from_smiles(smiles=i, init_globals=init_globals) for i in smiles
-    ]
+    return [from_smiles(smiles=i, init_globals=init_globals) for i in smiles]

@@ -7,6 +7,7 @@ import pickle
 import numpy as np
 from typing import Callable, List, Union
 
+
 class MixtureDataset(Dataset):
     def __init__(self, inputs, labels):
         super().__init__()
@@ -24,7 +25,9 @@ class MixtureDataset(Dataset):
         return input_data, labels
 
 
-def load_pickled_dataset(data_path, batch_size, num_workers, shuffle=False, augment=False):
+def load_pickled_dataset(
+    data_path, batch_size, num_workers, shuffle=False, augment=False
+):
     with open(os.path.join(data_path, "x1.pkl"), "rb") as f:
         X_1 = pickle.load(f)
     with open(os.path.join(data_path, "x2.pkl"), "rb") as f:
@@ -46,38 +49,45 @@ def load_pickled_dataset(data_path, batch_size, num_workers, shuffle=False, augm
         y = torch.cat((y, aug_y), dim=0)
 
     dataset = MixtureDataset(inputs=X, labels=y)
-    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle
+    )
     aug_dataset = MixtureDataset(inputs=aug_X, labels=aug_y)
-    aug_dataloader = DataLoader(aug_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle)
+    aug_dataloader = DataLoader(
+        aug_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle
+    )
 
     return dataset, dataloader, aug_dataset, aug_dataloader
 
-def dataset_to_torch(X, y, batch_size, num_workers, shuffle=False):
 
+def dataset_to_torch(X, y, batch_size, num_workers, shuffle=False):
     X = torch.Tensor(X)
     y = torch.Tensor(y).squeeze(1)
 
     dataset = MixtureDataset(inputs=X, labels=y)
-    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle
+    )
 
     return dataset, dataloader
+
 
 def map_nested_list(nested_list, mapping_dict):
     def map_element(x):
         return mapping_dict.get(x, x)
-    
+
     def recursive_map(item):
         if isinstance(item, list):
             return [recursive_map(sub_item) for sub_item in item]
         else:
             return map_element(item)
-    
+
     return recursive_map(nested_list)
 
+
 def get_mixture_smiles(
-        mixtures: np.ndarray, 
-        from_smiles: Callable
-    ) -> Union[List[Data], np.ndarray]:
+    mixtures: np.ndarray, from_smiles: Callable
+) -> Union[List[Data], np.ndarray]:
     # this function will return the graphs for all smiles
     # present in a mixture, returning them as a list
     flat_mix = mixtures.flatten()
@@ -89,13 +99,14 @@ def get_mixture_smiles(
     for mix in mixtures.transpose():
         smiles_processed = []
         for smi_arr in mix:
-            smiles_processed.append(np.pad(smi_arr, (0, pad_len - len(smi_arr)), constant_values=''))
+            smiles_processed.append(
+                np.pad(smi_arr, (0, pad_len - len(smi_arr)), constant_values="")
+            )
         mixtures_processed.append(smiles_processed)
-    mixtures_processed = np.array(mixtures_processed).transpose((1,2,0)).tolist()
+    mixtures_processed = np.array(mixtures_processed).transpose((1, 2, 0)).tolist()
 
     # map it to the feature
-    feature_map = {smi: i-1 for i, smi in enumerate([''] + smiles_list)}
+    feature_map = {smi: i - 1 for i, smi in enumerate([""] + smiles_list)}
     mix_inds = map_nested_list(mixtures_processed, feature_map)
 
-    return [from_smiles(smi) for smi in smiles_list], np.array(mix_inds) 
-    
+    return [from_smiles(smi) for smi in smiles_list], np.array(mix_inds)

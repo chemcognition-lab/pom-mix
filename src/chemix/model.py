@@ -1,7 +1,7 @@
 """Layers and models for Chemix.
 
 We seeks three types of symmetries for layers and models of mixtures and sets of mixtures:
-1. Permutation Equivariance (PE) for mixture layers, that is to say, a permutation on a input mixture should return a permuted output (mixture tensors). 
+1. Permutation Equivariance (PE) for mixture layers, that is to say, a permutation on a input mixture should return a permuted output (mixture tensors).
 2. Permutation Invariance (PI) for mixture aggregators, that is to say, the order of compounds in a mixture should not affect the output (mixture embeddings).
 2. Permutation Invariance (PI) for the pairs of mixtures, that is to say, the order of mixtures in a set should not affect the output (similary score for example).
 
@@ -100,9 +100,9 @@ class AddNorm(nn.Module):
 
 
 class SigmoidalScaledDotProductAttention(nn.Module):
-    '''Sigmoidal Scaled Dot-Product Attention
+    """Sigmoidal Scaled Dot-Product Attention
     cf. https://github.com/jadore801120/attention-is-all-you-need-pytorch/
-    '''
+    """
 
     def __init__(self, temperature, attn_dropout=0.1):
         super().__init__()
@@ -110,7 +110,6 @@ class SigmoidalScaledDotProductAttention(nn.Module):
         self.dropout = nn.Dropout(attn_dropout)
 
     def forward(self, q, k, v, mask=None):
-
         attn = torch.matmul(q / self.temperature, k.transpose(2, 3))
 
         if mask is not None:
@@ -123,9 +122,9 @@ class SigmoidalScaledDotProductAttention(nn.Module):
 
 
 class SigmoidalMultiHeadAttention(nn.Module):
-    ''' Sigmoidal Multi-Head Attention module
+    """Sigmoidal Multi-Head Attention module
     cf. https://github.com/jadore801120/attention-is-all-you-need-pytorch/
-    '''
+    """
 
     def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
         super().__init__()
@@ -139,16 +138,19 @@ class SigmoidalMultiHeadAttention(nn.Module):
         self.w_vs = nn.Linear(d_model, n_head * d_v, bias=False)
         self.fc = nn.Linear(n_head * d_v, d_model, bias=False)
 
-        self.attention = SigmoidalScaledDotProductAttention(temperature=d_k ** 0.5)
+        self.attention = SigmoidalScaledDotProductAttention(temperature=d_k**0.5)
 
         self.dropout = nn.Dropout(dropout)
         self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
 
-
     def forward(self, query, key, value, key_padding_mask=None, need_weights=False):
-
         d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
-        sz_b, len_q, len_k, len_v = query.size(0), query.size(1), key.size(1), value.size(1)
+        sz_b, len_q, len_k, len_v = (
+            query.size(0),
+            query.size(1),
+            key.size(1),
+            value.size(1),
+        )
 
         residual = query
 
@@ -163,7 +165,9 @@ class SigmoidalMultiHeadAttention(nn.Module):
 
         batch_size = key_padding_mask.shape[0]
         seq_len = key_padding_mask.shape[1]
-        key_padding_mask_expanded = key_padding_mask.view(batch_size, 1, 1, seq_len).expand(-1, self.n_head, -1, -1)
+        key_padding_mask_expanded = key_padding_mask.view(
+            batch_size, 1, 1, seq_len
+        ).expand(-1, self.n_head, -1, -1)
 
         # q, attn = self.attention(q, k, v, mask=mask)
         q, attn = self.attention(q, k, v, mask=key_padding_mask_expanded)
@@ -187,8 +191,7 @@ def initialize_attention(
     embed_dim: int,
     num_heads: int,
     dropout_rate: float,
-    ):
-
+):
     if attention_type == "standard":
         return nn.MultiheadAttention(
             embed_dim=embed_dim,
@@ -456,7 +459,7 @@ class ScaledCosineRegressor(nn.Module):
     def __init__(self, out_dim: int, act: ActivationEnum, no_bias: bool = False):
         super().__init__()
         self.cosine_distance = CosineRegressor()
-        self.scaler = nn.Linear(out_dim, out_dim, bias = not no_bias)
+        self.scaler = nn.Linear(out_dim, out_dim, bias=not no_bias)
         self.activation = ACTIVATION_MAP[act]()
 
         # clamp the scalar, this is required since our distance metric is only defined in this range
@@ -465,14 +468,12 @@ class ScaledCosineRegressor(nn.Module):
             for p in self.scaler.parameters():
                 p.copy_(nn.Parameter(torch.ones_like(p) * 0.5))
 
-
     def forward(self, x):
         cos_dist = self.cosine_distance(x)
         return self.activation(self.scaler(cos_dist))
 
 
 class Chemix(nn.Module):
-
     def __init__(
         self,
         input_net: nn.Module,
@@ -503,7 +504,6 @@ class Chemix(nn.Module):
 
 
 def build_chemix(config):
-
     project_input = nn.Linear(config.pom_input.embed_dim, config.mixture_net.embed_dim)
 
     mol_aggregation_methods = {
@@ -541,7 +541,9 @@ def build_chemix(config):
         RegressorEnum.sum: SumRegressor(output_dim, act),
         RegressorEnum.minmax: MinMaxRegressor(output_dim, act),
         RegressorEnum.pna: PNARegressor(output_dim, act),
-        RegressorEnum.scaled_cosine: ScaledCosineRegressor(output_dim, act, config.regressor.no_bias),
+        RegressorEnum.scaled_cosine: ScaledCosineRegressor(
+            output_dim, act, config.regressor.no_bias
+        ),
     }
 
     chemix = Chemix(

@@ -7,6 +7,7 @@ from typing import List
 
 from chemix.model import build_chemix
 
+
 def predict(
     model: nn.Module,
     data_loader: DataLoader,
@@ -34,7 +35,9 @@ def ensemble_predict(
     for checkpoint_path, config_path in zip(checkpoint_path_list, config_path_list):
         config = OmegaConf.load(config_path)
         model = build_chemix(config.chemix)
-        model.load_state_dict(torch.load(checkpoint_path, map_location=torch.device(device)))
+        model.load_state_dict(
+            torch.load(checkpoint_path, map_location=torch.device(device))
+        )
 
         preds = predict(model, data_loader, device)
         ensemble_preds.append(preds)

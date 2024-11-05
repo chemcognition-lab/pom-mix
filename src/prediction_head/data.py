@@ -50,6 +50,7 @@ class TaskType(StrEnum):
 @dataclasses.dataclass
 class TaskSpec:
     "Task specification for a GLM."
+
     dim: int
     task: TaskType
 

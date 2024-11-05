@@ -12,8 +12,8 @@ class GraphDataset(Dataset):
     """
     Wrapper for PyTorch dataset for a list of graph objects
     """
-    def __init__(self, x: List[pyg.data.Data],
-                 y: Iterable[Union[int, float]]):
+
+    def __init__(self, x: List[pyg.data.Data], y: Iterable[Union[int, float]]):
         self.x = x
         self.y = y
         self.node_dim = x[0].x.shape[-1]
@@ -25,5 +25,3 @@ class GraphDataset(Dataset):
 
     def __getitem__(self, idx: int):
         return self.x[idx], torch.tensor(self.y[idx], dtype=torch.float32)
-    
-

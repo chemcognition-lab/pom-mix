@@ -3,7 +3,7 @@ from pathlib import Path
 
 script_dir = Path(__file__).parent
 base_dir = Path(*script_dir.parts[:-1])
-sys.path.append( str(base_dir / 'src/') )
+sys.path.append(str(base_dir / "src/"))
 
 import seaborn as sns
 from dataloader import DatasetLoader, SplitLoader
@@ -20,14 +20,20 @@ import json
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
-parser.add_argument("--feat_type", action="store", type=str, choices=["rdkit2d", "pom_embeddings"], help="Feature type, select [rdkit2d, pom_embeddings].")
+parser.add_argument(
+    "--feat_type",
+    action="store",
+    type=str,
+    choices=["rdkit2d", "pom_embeddings"],
+    help="Feature type, select [rdkit2d, pom_embeddings].",
+)
 FLAGS = parser.parse_args()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     feat_type = FLAGS.feat_type
-    print(f'Running {feat_type}')
-    
-    fname = f'xgb_{feat_type}'
+    print(f"Running {feat_type}")
+
+    fname = f"xgb_{feat_type}"
     os.makedirs(fname, exist_ok=True)
 
     dl = DatasetLoader()
@@ -39,17 +45,19 @@ if __name__ == '__main__':
     test_results = []
     for id, train, val, test in sl.load_splits(dl.features, dl.labels):
         train_features, train_labels = train
-        train_features, train_labels = dl.permute_mixture_pairs(train_features, train_labels)
+        train_features, train_labels = dl.permute_mixture_pairs(
+            train_features, train_labels
+        )
         val_features, val_labels = val
         test_features, test_labels = test
 
         # pna across molecules, and then flatten along mixture dimension
-        if feat_type == 'pom_embeddings':
+        if feat_type == "pom_embeddings":
             tr, va, te = [], [], []
             for i in range(train_features.shape[-1]):
-                tr.append(pna(train_features[...,i]))
-                va.append(pna(val_features[...,i]))
-                te.append(pna(test_features[...,i]))
+                tr.append(pna(train_features[..., i]))
+                va.append(pna(val_features[..., i]))
+                te.append(pna(test_features[..., i]))
             train_features = np.stack(tr, axis=-1)
             val_features = np.stack(va, axis=-1)
             test_features = np.stack(te, axis=-1)
@@ -59,9 +67,18 @@ if __name__ == '__main__':
         val_features = val_features.reshape(len(val_features), -1)
         test_features = test_features.reshape(len(test_features), -1)
 
-        logger = {'val_pearson': -np.inf}
-        bst = XGBRegressor(n_estimators=1000, max_depth=1000, learning_rate=0.01, subsample=0.8, colsample_bytree=0.8,
-                early_stopping_rounds=25, eval_metric=mean_squared_error, n_jobs=-1, verbosity=0)
+        logger = {"val_pearson": -np.inf}
+        bst = XGBRegressor(
+            n_estimators=1000,
+            max_depth=1000,
+            learning_rate=0.01,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            early_stopping_rounds=25,
+            eval_metric=mean_squared_error,
+            n_jobs=-1,
+            verbosity=0,
+        )
 
         # fit
         bst.fit(train_features, train_labels, eval_set=[(val_features, val_labels)])
@@ -69,19 +86,25 @@ if __name__ == '__main__':
         # perform validation check
         y_pred = bst.predict(val_features)
         prs, _ = pearsonr(val_labels.flatten(), y_pred.flatten())
-        
-        # if validation check is good, calculate results for test set
-        if logger['val_pearson'] < prs:
-            y_pred = bst.predict(test_features)
-            logger['val_pearson'] = prs
-            logger['id'] = id
-            logger['y_pred'] = y_pred.tolist()
-            logger['y_test'] = test_labels.flatten().tolist()
-            logger['r2_score'] = r2_score(test_labels.flatten(), y_pred.flatten()).astype(float)
-            logger['rmse'] = root_mean_squared_error(test_labels.flatten(), y_pred.flatten()).astype(float)
-            logger['pearson'] = pearsonr(test_labels.flatten(), y_pred.flatten())[0].astype(float)
-            logger['kendall'] = kendalltau(test_labels.flatten(), y_pred.flatten())[0].astype(float)
-            json.dump(logger, open(f'{fname}/model_{id}_stats.json', 'w'), indent=4)
-            bst.save_model(f'{fname}/model_{id}.json')
-        
 
+        # if validation check is good, calculate results for test set
+        if logger["val_pearson"] < prs:
+            y_pred = bst.predict(test_features)
+            logger["val_pearson"] = prs
+            logger["id"] = id
+            logger["y_pred"] = y_pred.tolist()
+            logger["y_test"] = test_labels.flatten().tolist()
+            logger["r2_score"] = r2_score(
+                test_labels.flatten(), y_pred.flatten()
+            ).astype(float)
+            logger["rmse"] = root_mean_squared_error(
+                test_labels.flatten(), y_pred.flatten()
+            ).astype(float)
+            logger["pearson"] = pearsonr(test_labels.flatten(), y_pred.flatten())[
+                0
+            ].astype(float)
+            logger["kendall"] = kendalltau(test_labels.flatten(), y_pred.flatten())[
+                0
+            ].astype(float)
+            json.dump(logger, open(f"{fname}/model_{id}_stats.json", "w"), indent=4)
+            bst.save_model(f"{fname}/model_{id}.json")

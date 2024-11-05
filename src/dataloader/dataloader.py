@@ -1,6 +1,7 @@
 import ast
 import os, sys
-sys.path.append('..')
+
+sys.path.append("..")
 
 
 from pathlib import Path
@@ -26,6 +27,7 @@ class DatasetLoader:
     """
     Loads and cleans up your data
     """
+
     def __init__(self):
         self.features = None
         self.labels = None
@@ -124,9 +126,9 @@ class DatasetLoader:
             validate=self.datasets[name]["validate"],
         )
 
-        self.is_mixture = name == 'mixtures'
+        self.is_mixture = name == "mixtures"
         if self.is_mixture:
-            self.dataset_id = self.features[:,0]   # expose dataset id for splitting
+            self.dataset_id = self.features[:, 0]  # expose dataset id for splitting
         else:
             self.dataset_id = None
 
@@ -216,8 +218,7 @@ class DatasetLoader:
             "mordred_descriptors",
             "mix_smiles",
             "mix_rdkit2d",
-            "mix_rdkit2d_mean"
-            "mix_pom_embeddings",
+            "mix_rdkit2d_mean" "mix_pom_embeddings",
         ]
 
         if isinstance(representation, Callable):
@@ -229,23 +230,29 @@ class DatasetLoader:
 
         elif representation == "molecular_graphs":
             from .representations.graphs import molecular_graphs
+
             self.features = molecular_graphs(smiles=self.features, **kwargs)
 
         elif representation == "morgan_fingerprints":
             from .representations.features import morgan_fingerprints
+
             self.features = morgan_fingerprints(self.features, **kwargs)
 
         elif representation == "rdkit2d":
             from .representations.features import rdkit2d_normalized_features
+
             self.features = rdkit2d_normalized_features(self.features, **kwargs)
 
         elif representation == "mordred_descriptors":
             from .representations.features import mordred_descriptors
+
             self.features = mordred_descriptors(self.features, **kwargs)
 
-        elif representation == 'mix_smiles':
+        elif representation == "mix_smiles":
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            smi_df = pd.read_csv(DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv")
+            smi_df = pd.read_csv(
+                DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv"
+            )
             smi_df = smi_df.set_index(["Dataset", "Mixture Label"])
             feature_list = np.empty(
                 (len(self.features), 2), dtype=object
@@ -259,7 +266,11 @@ class DatasetLoader:
 
         elif representation in ["mix_rdkit2d", "mix_rdkit2d_mean"]:
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            fname = f"mixtures/mixture_rdkit_definitions_clean.csv" if representation == "mix_rdkit2d" else f"mixtures/mixture_rdkit_mean_definitions_clean.csv"
+            fname = (
+                f"mixtures/mixture_rdkit_definitions_clean.csv"
+                if representation == "mix_rdkit2d"
+                else f"mixtures/mixture_rdkit_mean_definitions_clean.csv"
+            )
             rdkit_df = pd.read_csv(DATASET_DIR / fname)
 
             feature_list = []
@@ -280,11 +291,15 @@ class DatasetLoader:
 
         elif representation == "mix_pom_embeddings":
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            smi_df = pd.read_csv(DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv")
+            smi_df = pd.read_csv(
+                DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv"
+            )
 
             # load the pom embeddings
             # note that the rows correspond to each other
-            pom_embeds = np.load(DATASET_DIR / "mixtures/mixture_pom_embeddings.npz")['features']
+            pom_embeds = np.load(DATASET_DIR / "mixtures/mixture_pom_embeddings.npz")[
+                "features"
+            ]
 
             feature_list = []
             for feature in self.features:
@@ -296,63 +311,77 @@ class DatasetLoader:
                     (smi_df["Dataset"] == feature[0])
                     & (smi_df["Mixture Label"] == feature[2])
                 ][smi_df.columns[2:]].index[0]
-                feature_list.append(np.stack([pom_embeds[mix_1], pom_embeds[mix_2]], axis=-1))
+                feature_list.append(
+                    np.stack([pom_embeds[mix_1], pom_embeds[mix_2]], axis=-1)
+                )
 
             self.features = np.stack(feature_list, axis=0)
-            
+
         else:
             raise Exception(
                 f"The specified representation choice {representation} is not a valid option."
                 f"Choose between {valid_representations}."
             )
-        
+
     def augment(self, augment_type: str = None):
         if not self.is_mixture:
             raise Exception("Can only augment mixtures dataset.")
         if not augment_type:
-            raise Exception("Must specify augment strategy: 'permute_mixture_pairs', 'self_mixture_unity', 'single_molecule_mixture_gslf_jaccards'")
-        if augment_type == 'permute_mixture_pairs':
-            self.features, self.labels = self.permute_mixture_pairs(self.features, self.labels)
-        elif augment_type == 'self_mixture_unity':
-            self.features, self.labels = self.self_mixture_unity(self.features, self.labels)
-        elif augment_type == 'single_molecule_mixture_gslf_jaccards':
-            self.features, self.labels = self.single_molecule_mixture_gslf_jaccards(self.features, self.labels)
+            raise Exception(
+                "Must specify augment strategy: 'permute_mixture_pairs', 'self_mixture_unity', 'single_molecule_mixture_gslf_jaccards'"
+            )
+        if augment_type == "permute_mixture_pairs":
+            self.features, self.labels = self.permute_mixture_pairs(
+                self.features, self.labels
+            )
+        elif augment_type == "self_mixture_unity":
+            self.features, self.labels = self.self_mixture_unity(
+                self.features, self.labels
+            )
+        elif augment_type == "single_molecule_mixture_gslf_jaccards":
+            self.features, self.labels = self.single_molecule_mixture_gslf_jaccards(
+                self.features, self.labels
+            )
         else:
-            raise Exception("Augment strategy must be 'permute_mixture_pairs', 'self_mixture_unity', 'single_molecule_mixture_gslf_jaccards'")
-        
+            raise Exception(
+                "Augment strategy must be 'permute_mixture_pairs', 'self_mixture_unity', 'single_molecule_mixture_gslf_jaccards'"
+            )
+
     @staticmethod
     def permute_mixture_pairs(features, labels):
         """
         Augments the given mixture pairs by creating a new feature list and concatenating it with the original features, but permuted.
         Assumes that the last dimension is the dimension of mixtures pairs
-        
+
         Args:
             features (ndarray): The original feature list.
             labels (ndarray): The original label list.
-            
+
         Returns:
             tuple: A tuple containing the augmented features and labels.
         """
-        feature_list_augment = np.array([np.stack([x[..., 1], x[..., 0]], axis=-1) for x in features])
+        feature_list_augment = np.array(
+            [np.stack([x[..., 1], x[..., 0]], axis=-1) for x in features]
+        )
         features = np.vstack((features, feature_list_augment))
         labels = np.concatenate([labels, labels])
         return features, labels
-    
+
     @staticmethod
     def self_mixture_unity(features, labels):
         """
         Augments the given mixture pairs by enforcing that the existing mixtures' self distance is 1.
         Assumes that the last dimension is the dimension of mixtures pairs
-        
+
         Args:
             features (ndarray): The original feature list.
             labels (ndarray): The original label list.
-            
+
         Returns:
             tuple: A tuple containing the augmented features and labels.
         """
         for mixture_dim in [0, 1]:
-            if features[0].dtype == 'O': # check if it is a series of smiles strings
+            if features[0].dtype == "O":  # check if it is a series of smiles strings
                 unique_mixtures = np.array([])
                 seen = set()
                 for sub_array in features[..., mixture_dim]:
@@ -362,73 +391,91 @@ class DatasetLoader:
                         unique_mixtures = np.append(unique_mixtures, sub_array)
             else:
                 unique_mixtures = np.unique(features[..., mixture_dim], axis=0)
-            feature_list_augment = np.array([np.stack([x, x], axis=-1) for x in unique_mixtures])
+            feature_list_augment = np.array(
+                [np.stack([x, x], axis=-1) for x in unique_mixtures]
+            )
             features = np.vstack((features, feature_list_augment))
             labels = np.concatenate([labels, np.zeros((len(unique_mixtures), 1))])
         return features, labels
-    
+
     @staticmethod
     def single_molecule_mixture_gslf_jaccards(features, labels):
         """
-        Augments the mixture dataset by creating single-molecule mixtures and artificially specifying 
+        Augments the mixture dataset by creating single-molecule mixtures and artificially specifying
         GS-LF label Jaccard distances as mixture perceptual distances.
         Assumes that the last dimension is the dimension of mixtures pairs
-        
+
         Args:
             features (ndarray): The original feature list.
             labels (ndarray): The original label list.
-            
+
         Returns:
             tuple: A tuple containing the augmented features and labels.
         """
-        if features[0].dtype != 'O': # check if it is a series of smiles strings
-            raise Exception("Single molecule Jaccard augmentation only works with SMILES strings.")
+        if features[0].dtype != "O":  # check if it is a series of smiles strings
+            raise Exception(
+                "Single molecule Jaccard augmentation only works with SMILES strings."
+            )
         # Find unique molecules. Features has (n_mixtures, smiles_string, 2)
         # Flatten features and np unique
         unique_molecules = np.unique(np.concatenate(features.flatten(), axis=0))
         # Create all possible pairs using itertools.combination
         gslf_df = pd.read_csv(DATASET_DIR / "gs-lf/gs-lf_combined.csv")
-        gslf_df = gslf_df[gslf_df['IsomericSMILES'].isin(unique_molecules)]
-        gslf_df.drop(columns=['descriptors'], inplace=True)
+        gslf_df = gslf_df[gslf_df["IsomericSMILES"].isin(unique_molecules)]
+        gslf_df.drop(columns=["descriptors"], inplace=True)
         gslf_smiles = gslf_df.iloc[:, 0]
         gslf_labels = gslf_df.iloc[:, 1:]
 
         # Calculate pairwise Jaccard distances
-        jaccard_distances = pdist(gslf_labels, metric='jaccard')
+        jaccard_distances = pdist(gslf_labels, metric="jaccard")
 
         # Convert distance vector to square matrix
         distance_matrix = squareform(jaccard_distances)
 
         # Create a new dataframe with pairwise distances
-        jaccard_df = pd.DataFrame(distance_matrix, index=gslf_smiles, columns=gslf_smiles)
+        jaccard_df = pd.DataFrame(
+            distance_matrix, index=gslf_smiles, columns=gslf_smiles
+        )
 
         # Create all possible pairs using itertools.combination
         actual_pairs = np.array(list(itertools.combinations(jaccard_df.columns, 2)))
         jaccard_distances = np.array([])
         for pair in actual_pairs:
-            jaccard_distances = np.append(jaccard_distances, jaccard_df.loc[pair[0], pair[1]])
+            jaccard_distances = np.append(
+                jaccard_distances, jaccard_df.loc[pair[0], pair[1]]
+            )
         jaccard_distances = jaccard_distances.reshape(-1, 1)
 
-        actual_pairs = np.array([np.array([[pair[0]], [pair[1]]], dtype='object') for pair in actual_pairs], dtype='object')
-        
-        # Stupid workaround for inhomogeneous third dimension of features
-        concatenated = np.empty((features.shape[0] + actual_pairs.shape[0], features.shape[1]), dtype='object')
-        concatenated[:features.shape[0], :] = features
-        for i in range(actual_pairs.shape[0]):
-                concatenated[features.shape[0] + i, 0] = actual_pairs[i, 0]
-                concatenated[features.shape[0] + i, 1] = actual_pairs[i, 1]
+        actual_pairs = np.array(
+            [np.array([[pair[0]], [pair[1]]], dtype="object") for pair in actual_pairs],
+            dtype="object",
+        )
 
-        
+        # Stupid workaround for inhomogeneous third dimension of features
+        concatenated = np.empty(
+            (features.shape[0] + actual_pairs.shape[0], features.shape[1]),
+            dtype="object",
+        )
+        concatenated[: features.shape[0], :] = features
+        for i in range(actual_pairs.shape[0]):
+            concatenated[features.shape[0] + i, 0] = actual_pairs[i, 0]
+            concatenated[features.shape[0] + i, 1] = actual_pairs[i, 1]
+
         features = concatenated
         labels = np.concatenate([labels, jaccard_distances])
 
         return features, labels
 
 
-
 class SplitLoader:
     def __init__(self, split_set: str = "random_cv"):
-        assert split_set in ["random_cv", "ablate_components", "ablate_molecules", "lso_molecules", "random_train_val"]
+        assert split_set in [
+            "random_cv",
+            "ablate_components",
+            "ablate_molecules",
+            "lso_molecules",
+            "random_train_val",
+        ]
         self.split_set = split_set
 
     def load_splits(self, features, labels):
@@ -436,23 +483,24 @@ class SplitLoader:
         create a set of splits to look at
         suggested usage:
         for id, train, val, test in sl.load_splits(dl.features, dl.labels):
-            print(id) 
+            print(id)
             train_features, train_labels = train
             val_features, val_labels = val
             test_features, test_labels = test
-        
+
         """
         split_dir = DATASET_DIR / "mixtures/splits/"
 
         idxs = []
         for fname in sorted(split_dir.glob(f"{self.split_set}*.npz")):
             idx = np.load(fname)
-            idxs.append((
-                str(idx['identifier']),
-                (features[idx['training']], labels[idx['training']]), 
-                (features[idx['validation']], labels[idx['validation']]), 
-                (features[idx['testing']], labels[idx['testing']]), 
-            ))
+            idxs.append(
+                (
+                    str(idx["identifier"]),
+                    (features[idx["training"]], labels[idx["training"]]),
+                    (features[idx["validation"]], labels[idx["validation"]]),
+                    (features[idx["testing"]], labels[idx["testing"]]),
+                )
+            )
 
         return idxs
-

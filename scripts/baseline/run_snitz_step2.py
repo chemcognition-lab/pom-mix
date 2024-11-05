@@ -82,7 +82,7 @@ if __name__ == "__main__":
             for i in range(2000):
                 print(f"{n=}, {i=}")
                 idx_features = np.random.choice(
-                    train_features.shape[1], n_features-1, replace=False
+                    train_features.shape[1], n_features - 1, replace=False
                 )
                 if n in idx_features:
                     # add another feature not in the list

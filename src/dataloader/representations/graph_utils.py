@@ -6,6 +6,7 @@ from rdkit import RDLogger
 RDLogger.DisableLog("rdApp.*")
 
 import warnings
+
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 import torch
@@ -79,15 +80,14 @@ def global_features(mol: Chem.rdchem.Mol) -> List:
     return feats
 
 
-
 def from_smiles(smiles: str, init_globals: bool = True) -> Data:
     mol = Chem.MolFromSmiles(smiles)
-    smi = Chem.MolToSmiles(mol)         # canonicalized
+    smi = Chem.MolToSmiles(mol)  # canonicalized
 
     a_feats = []
     for a in mol.GetAtoms():
         a_feats.append(atom_features(a))
-    
+
     a_feats = torch.tensor(a_feats, dtype=torch.float)
 
     b_indices, b_feats = [], []
@@ -98,7 +98,7 @@ def from_smiles(smiles: str, init_globals: bool = True) -> Data:
 
         b_indices += [[i, j], [j, i]]
         b_feats += [feats, feats]
-    
+
     b_index = torch.tensor(b_indices)
     b_index = b_index.t().to(torch.long).view(2, -1)
     b_feats = torch.tensor(b_feats, dtype=torch.float)
@@ -106,12 +106,10 @@ def from_smiles(smiles: str, init_globals: bool = True) -> Data:
     if b_index.numel() > 0:  # Sort indices.
         perm = (b_index[0] * a_feats.size(0) + b_index[1]).argsort()
         b_index, b_feats = b_index[:, perm], b_feats[perm]
-    
+
     if init_globals:
         g_feats = torch.tensor([global_features(mol)], dtype=torch.float)
     else:
-        g_feats = torch.tensor([[0.]], dtype=torch.float)
+        g_feats = torch.tensor([[0.0]], dtype=torch.float)
 
     return Data(x=a_feats, edge_index=b_index, edge_attr=b_feats, u=g_feats, smiles=smi)
-
-

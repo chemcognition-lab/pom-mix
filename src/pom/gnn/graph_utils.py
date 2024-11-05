@@ -18,19 +18,22 @@ def get_graph_degree_histogram(train_dataset: GraphDataset):
     for data in train_dataset:
         d = degree(data[0].edge_index[1], num_nodes=data[0].num_nodes, dtype=torch.long)
         deg += torch.bincount(d, minlength=deg.numel())
-    
+
     return deg
+
 
 def get_pooling_function(pool: str, pool_args: dict):
     pooling_func = {
-        'mean': global_mean_pool,
-        'add': global_add_pool,
-        'pna': DegreeScalerAggregation(
-            aggr= ['mean', 'min', 'max', 'std'], 
-            scaler = ["identity", "amplification", "attenuation"],
-            **pool_args) # PNA-style aggregation
+        "mean": global_mean_pool,
+        "add": global_add_pool,
+        "pna": DegreeScalerAggregation(
+            aggr=["mean", "min", "max", "std"],
+            scaler=["identity", "amplification", "attenuation"],
+            **pool_args,
+        ),  # PNA-style aggregation
     }
     return pooling_func[pool]
+
 
 def get_model_parameters_count(model: torch.nn.Module):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
