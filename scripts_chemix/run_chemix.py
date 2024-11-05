@@ -47,7 +47,7 @@ parser.add_argument("--batch-size", action="store", type=int, default=500, help=
 parser.add_argument("--augment", action="store_true", default=False, help="Toggle augmenting the training set.")
 parser.add_argument("--pom-path", action="store", default=base_dir / "scripts_pom/gs-lf_models/pretrained_pom", 
                     help="Path where POM model parameter and weights are found.")
-parser.add_argument("--chemix-path", action="store", default=base_dir / "scripts_chemix/results/pretrained_model", 
+parser.add_argument("--chemix-path", action="store", default=base_dir / "scripts_chemix/results/random_train_val/model", 
                     help="Path where chemix model parameter and weights are found.")
 parser.add_argument("--no-verbose", action="store_true", default=False, help='Toggle the verbosity of training. Default False')
 parser.add_argument("--no-bias", action="store_true", default=False, help='Turn off the bias in final linear layer. Default False')
@@ -144,7 +144,7 @@ if __name__ == '__main__':
         metric_fn = F.pearson_corrcoef
         optimizer = torch.optim.Adam([{'params': chemix.parameters(), 'lr': hp_mix.lr}])
         num_epochs = 5000
-        es = EarlyStopping(chemix, patience=1000, mode='maximize')
+        es = EarlyStopping(chemix, patience=500, mode='maximize')
 
         # start training loop
         log = {k: [] for k in ['epoch', 'train_loss', 'val_loss', 'val_metric']}
