@@ -100,8 +100,8 @@ if __name__ == "__main__":
     # get dataset names
     # seed = 42
     # utils.set_seed(seed)
-    data_names = DatasetLoader().get_dataset_names()
-    data_names.remove("keller_2016")
+    # data_names = DatasetLoader().get_dataset_names()
+    # data_names.remove("keller_2016")
 
     # Load all models and datasets
     print(f"Using GPU: {torch.cuda.is_available()}")

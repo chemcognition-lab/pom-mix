@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 script_dir = Path(__file__).parent
-base_dir = Path(*script_dir.parts[:-1])
+base_dir = Path(*script_dir.parts[:-2])
 sys.path.append(str(base_dir / "src/"))
 
 # basic dependencies
