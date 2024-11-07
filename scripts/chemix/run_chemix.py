@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 script_dir = Path(__file__).parent
-base_dir = Path(*script_dir.parts[:-1])
+base_dir = Path(*script_dir.parts[:-2])
 sys.path.append(str(base_dir / "src/"))
 
 import json
@@ -75,13 +75,13 @@ parser.add_argument(
 parser.add_argument(
     "--pom-path",
     action="store",
-    default=base_dir / "scripts_pom/gs-lf_models/pretrained_pom",
+    default=base_dir / "scripts/pom/gs-lf_models/pretrained_pom",
     help="Path where POM model parameter and weights are found.",
 )
 parser.add_argument(
     "--chemix-path",
     action="store",
-    default=base_dir / "scripts_chemix/results/random_train_val/model",
+    default=base_dir / "scripts/chemix/results/random_train_val/model",
     help="Path where chemix model parameter and weights are found.",
 )
 parser.add_argument(
@@ -218,7 +218,7 @@ if __name__ == "__main__":
         metric_fn = F.pearson_corrcoef
         optimizer = torch.optim.Adam([{"params": chemix.parameters(), "lr": hp_mix.lr}])
         num_epochs = 5000
-        es = EarlyStopping(chemix, patience=500, mode="maximize")
+        es = EarlyStopping(chemix, patience=1000, mode="maximize")
 
         # start training loop
         log = {k: [] for k in ["epoch", "train_loss", "val_loss", "val_metric"]}

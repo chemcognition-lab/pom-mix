@@ -63,13 +63,13 @@ parser.add_argument(
 parser.add_argument(
     "--pom-path",
     action="store",
-    default=base_dir / "scripts_pom/gs-lf_models/pretrained_pom",
+    default=base_dir / "scripts/pom/gs-lf_models/pretrained_pom",
     help="Path where POM model parameter and weights are found.",
 )
 parser.add_argument(
     "--chemix-path",
     action="store",
-    default=base_dir / "scripts_chemix/results",
+    default=base_dir / "scripts/chemix/results",
     help="Path where chemix model parameter and weights are found.",
 )
 parser.add_argument(
