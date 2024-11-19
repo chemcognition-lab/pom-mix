@@ -103,6 +103,12 @@ def pna(feat):
                 [x.mean(axis=0), var, x.max(axis=0), x.min(axis=0)]
             )
         return new_feat
+    
+def mean(arr, padding_value=-999):
+    arr = np.array(arr)
+    mask = (arr != padding_value)
+    means = np.sum(arr * mask, axis=1) / np.sum(mask, axis=1)
+    return means
 
 
 def cast_float(x):

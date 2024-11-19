@@ -3,7 +3,6 @@ import sys
 
 sys.path.append("..")
 
-
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 
@@ -12,6 +11,8 @@ import pandas as pd
 from rdkit.Chem import MolFromSmiles, MolToSmiles
 import itertools
 from scipy.spatial.distance import pdist, squareform
+
+import pommix_utils
 
 # Inspired by gauche DataLoader
 # https://github.com/leojklarner/gauche
@@ -217,15 +218,16 @@ class DatasetLoader:
             "mordred_descriptors",
             "mix_smiles",
             "mix_rdkit2d",
-            "mix_rdkit2d_mean" "mix_pom_embeddings",
+            "mix_pom_embeddings",
+            "mix_molt5_embeddings"
         ]
 
         if isinstance(representation, Callable):
             self.features = representation(self.features, **kwargs)
 
-        # elif representation == "pyg_molecular_graphs":
-        #     from .representations.graphs import pyg_molecular_graphs
-        #     self.features = pyg_molecular_graphs(smiles=self.features, **kwargs)
+        elif representation == "pyg_molecular_graphs":
+            from .representations.graphs import pyg_molecular_graphs
+            self.features = pyg_molecular_graphs(smiles=self.features, **kwargs)
 
         elif representation == "molecular_graphs":
             from .representations.graphs import molecular_graphs
@@ -252,6 +254,8 @@ class DatasetLoader:
             smi_df = pd.read_csv(
                 DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv"
             )
+            smi_df = smi_df.drop(['length', 'Duplicate', 'Duplicate Of'], axis=1)
+
             smi_df = smi_df.set_index(["Dataset", "Mixture Label"])
             feature_list = np.empty(
                 (len(self.features), 2), dtype=object
@@ -263,40 +267,15 @@ class DatasetLoader:
                     feature_list[mixid, mi] = smiles_arr
             self.features = feature_list
 
-        elif representation in ["mix_rdkit2d", "mix_rdkit2d_mean"]:
-            # Features is ["Dataset", "Mixture 1", "Mixture 2"]
-            fname = (
-                "mixtures/mixture_rdkit_definitions_clean.csv"
-                if representation == "mix_rdkit2d"
-                else "mixtures/mixture_rdkit_mean_definitions_clean.csv"
-            )
-            rdkit_df = pd.read_csv(DATASET_DIR / fname)
-
-            feature_list = []
-            for feature in self.features:
-                mix_1 = rdkit_df.loc[
-                    (rdkit_df["Dataset"] == feature[0])
-                    & (rdkit_df["Mixture Label"] == feature[1])
-                ][rdkit_df.columns[2:]]
-                mix_1 = mix_1.dropna(axis=1).to_numpy()[0]
-                mix_2 = rdkit_df.loc[
-                    (rdkit_df["Dataset"] == feature[0])
-                    & (rdkit_df["Mixture Label"] == feature[2])
-                ][rdkit_df.columns[2:]]
-                mix_2 = mix_2.dropna(axis=1).to_numpy()[0]
-                feature_list.append(np.stack([mix_1, mix_2], axis=-1))
-
-            self.features = np.array(feature_list, dtype=object)
-
-        elif representation == "mix_pom_embeddings":
+        elif representation in ["mix_rdkit2d"]:
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
             smi_df = pd.read_csv(
                 DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv"
             )
-
-            # load the pom embeddings
+            smi_df = smi_df.drop(['length', 'Duplicate', 'Duplicate Of'], axis=1)
+            
             # note that the rows correspond to each other
-            pom_embeds = np.load(DATASET_DIR / "mixtures/mixture_pom_embeddings.npz")[
+            rdkit_feat = np.load(DATASET_DIR / f"mixtures/mixture_rdkit2d.npz")[
                 "features"
             ]
 
@@ -311,7 +290,49 @@ class DatasetLoader:
                     & (smi_df["Mixture Label"] == feature[2])
                 ][smi_df.columns[2:]].index[0]
                 feature_list.append(
-                    np.stack([pom_embeds[mix_1], pom_embeds[mix_2]], axis=-1)
+                    np.stack([rdkit_feat[mix_1], rdkit_feat[mix_2]], axis=-1)
+                )
+            self.features = np.array(feature_list, dtype=float)
+
+            # further processing
+            if "pna" in representation:
+                feat_reduced = []
+                for i in range(self.features.shape[-1]):
+                    feat_reduced.append(pommix_utils.pna(self.features[...,i]))
+                self.features = np.stack(feat_reduced, axis=-1)
+            elif "mean" in representation:
+                feat_reduced = []
+                for i in range(self.features.shape[-1]):
+                    feat_reduced.append(pommix_utils.mean(self.features[...,i]))
+                self.features = np.stack(feat_reduced, axis=-1)
+
+
+        elif representation in ["mix_pom_embeddings", "mix_molt5_embeddings"]:
+            # Features is ["Dataset", "Mixture 1", "Mixture 2"]
+            tag = representation.replace("mix_", "")
+            smi_df = pd.read_csv(
+                DATASET_DIR / "mixtures/mixture_smi_definitions_clean.csv"
+            )
+            smi_df = smi_df.drop(['length', 'Duplicate', 'Duplicate Of'], axis=1)
+
+            # load the pom embeddings
+            # note that the rows correspond to each other
+            embeds = np.load(DATASET_DIR / f"mixtures/mixture_{tag}.npz")[
+                "features"
+            ]
+
+            feature_list = []
+            for feature in self.features:
+                mix_1 = smi_df.loc[
+                    (smi_df["Dataset"] == feature[0])
+                    & (smi_df["Mixture Label"] == feature[1])
+                ][smi_df.columns[2:]].index[0]
+                mix_2 = smi_df.loc[
+                    (smi_df["Dataset"] == feature[0])
+                    & (smi_df["Mixture Label"] == feature[2])
+                ][smi_df.columns[2:]].index[0]
+                feature_list.append(
+                    np.stack([embeds[mix_1], embeds[mix_2]], axis=-1)
                 )
 
             self.features = np.stack(feature_list, axis=0)
@@ -321,6 +342,24 @@ class DatasetLoader:
                 f"The specified representation choice {representation} is not a valid option."
                 f"Choose between {valid_representations}."
             )
+        
+    def reduce(self, reduce_type:str = "mean"):
+        if not self.is_mixture:
+            raise Exception("Can only augment mixtures dataset.")
+        print(f'Reducing each mixture by: {reduce_type}. Select between ["pna", "mean"]')
+        
+        # reduce the mixture along the molecular axis
+        reduce_method = {
+            'pna': pommix_utils.pna,
+            'mean': pommix_utils.mean,
+        }
+
+        # loop along mixtures dimension
+        feat_reduced = []
+        for i in range(self.features.shape[-1]):
+            feat_reduced.append(reduce_method[reduce_type](self.features[...,i]))
+        self.features = np.stack(feat_reduced, axis=-1)
+        
 
     def augment(self, augment_type: str = None):
         if not self.is_mixture:

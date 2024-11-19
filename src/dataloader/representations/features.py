@@ -7,7 +7,6 @@ import logging
 import warnings
 
 from rdkit import RDLogger
-
 RDLogger.DisableLog("rdApp.*")
 
 
