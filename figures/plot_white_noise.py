@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # geom_mean = np.round(geom_mean * 2) / 2
 
     # load chemix model and get embedding=
-    pommix_path = base_dir / "scripts_pommix/results/random_train_val/model"
+    pommix_path = base_dir / "scripts/pommix/results/random_train_val/model"
     hp_gnn = ConfigDict(json.load(open(pommix_path / "hparams_graphnets.json", "r")))
     embedder = GraphNets(node_dim=NODE_DIM, edge_dim=EDGE_DIM, **hp_gnn)
     embedder.load_state_dict(

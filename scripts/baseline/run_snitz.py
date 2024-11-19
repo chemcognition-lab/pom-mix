@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 script_dir = Path(__file__).parent
-base_dir = Path(*script_dir.parts[:-1])
+base_dir = Path(*script_dir.parts[:-2])
 sys.path.append(str(base_dir / "src/"))
 
 from dataloader.dataloader import DatasetLoader, SplitLoader
@@ -46,7 +46,8 @@ if __name__ == "__main__":
 
     dl = DatasetLoader()
     dl.load_dataset("mixtures")
-    dl.featurize("mix_rdkit2d_mean")
+    dl.featurize("mix_rdkit2d")
+    dl.reduce('mean')
 
     # load splits
     sl = SplitLoader("random_cv")

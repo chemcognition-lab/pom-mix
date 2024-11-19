@@ -3,11 +3,13 @@ import os
 from pathlib import Path
 
 script_dir = Path(__file__).parent
-base_dir = Path(*script_dir.parts[:-1])
+base_dir = Path(*script_dir.parts[:-2])
 sys.path.append(str(base_dir / "src/"))
 
+import seaborn as sns
+import pandas as pd
 from dataloader import DatasetLoader, SplitLoader
-from pommix_utils import pna
+import pommix_utils
 
 from xgboost import XGBRegressor
 from sklearn.metrics import root_mean_squared_error, mean_squared_error, r2_score
@@ -23,8 +25,8 @@ parser.add_argument(
     "--feat_type",
     action="store",
     type=str,
-    choices=["rdkit2d", "pom_embeddings"],
-    help="Feature type, select [rdkit2d, pom_embeddings].",
+    choices=["rdkit2d", "pom_embeddings", "molt5_embeddings"],
+    help="Feature type, select [rdkit2d, pom_embeddings, molt5_embeddings].",
 )
 FLAGS = parser.parse_args()
 
@@ -39,6 +41,11 @@ if __name__ == "__main__":
     dl.load_dataset("mixtures")
     dl.featurize(f"mix_{feat_type}")
 
+    if feat_type in ['rdkit2d', 'pom_embeddings']:
+        dl.reduce('pna')
+    elif feat_type == 'molt5_embeddings':
+        dl.reduce('mean')       # MolT5 embeddings are too large for pna
+
     # load splits
     sl = SplitLoader("random_cv")
     test_results = []
@@ -49,17 +56,6 @@ if __name__ == "__main__":
         )
         val_features, val_labels = val
         test_features, test_labels = test
-
-        # pna across molecules, and then flatten along mixture dimension
-        if feat_type == "pom_embeddings":
-            tr, va, te = [], [], []
-            for i in range(train_features.shape[-1]):
-                tr.append(pna(train_features[..., i]))
-                va.append(pna(val_features[..., i]))
-                te.append(pna(test_features[..., i]))
-            train_features = np.stack(tr, axis=-1)
-            val_features = np.stack(va, axis=-1)
-            test_features = np.stack(te, axis=-1)
 
         # flatten along mixture dimension
         train_features = train_features.reshape(len(train_features), -1)
@@ -107,3 +103,9 @@ if __name__ == "__main__":
             ].astype(float)
             json.dump(logger, open(f"{fname}/model_{id}_stats.json", "w"), indent=4)
             bst.save_model(f"{fname}/model_{id}.json")
+
+        pd.DataFrame({
+            'Predicted_Experimental_Values': y_pred.flatten(),
+            'Ground_Truth': test_labels.flatten(),
+            'MAE': np.abs(y_pred.flatten() - test_labels.flatten())
+        }).to_csv(f'{fname}/{id}_test_predictions.csv', index=False)

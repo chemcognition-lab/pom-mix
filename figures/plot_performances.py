@@ -30,11 +30,11 @@ if __name__ == "__main__":
 
     for filename, tag in zip(
         [
-            base_dir / "scripts_baseline/snitz_cosine_similarity",
-            base_dir / "scripts_baseline/xgb_rdkit2d",
-            base_dir / "scripts_baseline/xgb_pom_embeddings",
-            base_dir / "scripts_chemix/results/random_cv/model",
-            base_dir / "scripts_pommix/results/random_cv/model",
+            base_dir / "scripts/baseline/snitz_cosine_similarity",
+            base_dir / "scripts/baseline/xgb_rdkit2d",
+            base_dir / "scripts/baseline/xgb_pom_embeddings",
+            base_dir / "scripts/chemix/results/random_cv/model",
+            base_dir / "scripts/pommix/results/random_cv/model",
         ],
         model_order,
     ):

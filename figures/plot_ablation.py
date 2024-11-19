@@ -34,7 +34,7 @@ parser.add_argument(
 FLAGS = parser.parse_args()
 
 if __name__ == "__main__":
-    DATA_DIR = base_dir / Path(f"scripts_pommix/results/{FLAGS.split}/model")
+    DATA_DIR = base_dir / Path(f"scripts/pommix/results/{FLAGS.split}/model")
 
     # training set
     dl = DatasetLoader()

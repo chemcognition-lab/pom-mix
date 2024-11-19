@@ -49,7 +49,8 @@ if __name__ == "__main__":
 
     dl = DatasetLoader()
     dl.load_dataset("mixtures")
-    dl.featurize("mix_rdkit2d_mean")
+    dl.featurize("mix_rdkit2d")
+    dl.reduce('mean')
 
     # load splits
     sl = SplitLoader("random_cv")

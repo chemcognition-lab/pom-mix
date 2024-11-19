@@ -3,7 +3,8 @@ from typing import Optional
 
 import torch.nn as nn
 import torch_geometric as pyg
-from torch_geometric.nn import Linear
+# from torch_geometric.nn import Linear
+# from torch.nn import LazyLinear
 
 
 class MLP(nn.Module):
@@ -20,7 +21,7 @@ class MLP(nn.Module):
         self.output_dim = output_dim
         self.dropout_rate = dropout_rate
 
-        self.layers = nn.Sequential(Linear(-1, hidden_dim), nn.ReLU())
+        self.layers = nn.Sequential(nn.LazyLinear(hidden_dim), nn.ReLU())
         for _ in range(num_layers - 1):
             self.layers.append(nn.Linear(hidden_dim, hidden_dim))
             self.layers.append(nn.ReLU())
