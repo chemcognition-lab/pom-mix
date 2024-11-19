@@ -30,25 +30,31 @@ class DatasetLoader:
     def __init__(self):
         self.features = None
         self.labels = None
-        dataset_df = pd.read_csv(DATASET_DIR / "file_cleaning_features.csv")
-        dataset_df.index = dataset_df["dataset"]
-        dataset_df.drop(columns=["unclean", "label_columns", "dataset"], inplace=True)
-        dataset_df.rename({"new_label_columns": "labels"}, axis=1, inplace=True)
-
-        def parse_value(value):
-            if isinstance(value, str):
-                try:
-                    return ast.literal_eval(value)
-                except Exception:
-                    return value
-            return value
 
         # Create the dictionary of dictionaries
         self.datasets = {}
-        for dataset, row in dataset_df.iterrows():
-            self.datasets[dataset] = {col: parse_value(val) for col, val in row.items()}
+
         self.datasets.update(
             {
+                "gs-lf": {
+                    "features": ["IsomericSMILES"],
+                    "labels": ['alcoholic', 'aldehydic', 'alliaceous', 'almond', 'amber', 'animal', 'anisic', 'apple', 'apricot', 'aromatic', 'balsamic', 'banana', 
+                               'beefy', 'bergamot', 'berry', 'bitter', 'black currant', 'brandy', 'burnt', 'buttery', 'cabbage', 'camphoreous', 'caramellic', 
+                               'cedar', 'celery', 'chamomile', 'cheesy', 'cherry', 'chocolate', 'cinnamon', 'citrus', 'clean', 'clove', 'cocoa', 'coconut', 
+                               'coffee', 'cognac', 'cooked', 'cooling', 'cortex', 'coumarinic', 'creamy', 'cucumber', 'dairy', 'dry', 'earthy', 'ethereal', 
+                               'fatty', 'fermented', 'fishy', 'floral', 'fresh', 'fruit skin', 'fruity', 'garlic', 'gassy', 'geranium', 'grape', 'grapefruit', 
+                               'grassy', 'green', 'hawthorn', 'hay', 'hazelnut', 'herbal', 'honey', 'hyacinth', 'jasmin', 'juicy', 'ketonic', 'lactonic', 'lavender', 
+                               'leafy', 'leathery', 'lemon', 'lily', 'malty', 'meaty', 'medicinal', 'melon', 'metallic', 'milky', 'mint', 'muguet', 'mushroom', 
+                               'musk', 'musty', 'natural', 'nutty', 'odorless', 'oily', 'onion', 'orange', 'orangeflower', 'orris', 'ozone', 'peach', 'pear', 
+                               'phenolic', 'pine', 'pineapple', 'plum', 'popcorn', 'potato', 'powdery', 'pungent', 'radish', 'raspberry', 'ripe', 'roasted', 'rose', 
+                               'rummy', 'sandalwood', 'savory', 'sharp', 'smoky', 'soapy', 'solvent', 'sour', 'spicy', 'strawberry', 'sulfurous', 'sweaty', 'sweet', 
+                               'tea', 'terpenic', 'tobacco', 'tomato', 'tropical', 'vanilla', 'vegetable', 'vetiver', 'violet', 'warm', 'waxy', 'weedy', 'winey', 'woody'],
+                    "n_datapoints": 4814,
+                    "task": "multilabel",
+                    "task_dim": 138,
+                    "validate": True,  
+                },
+
                 "mixtures": {
                     "features": ["Dataset", "Mixture 1", "Mixture 2"],
                     "labels": ["Experimental Values"],
