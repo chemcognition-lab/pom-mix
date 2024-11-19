@@ -58,7 +58,7 @@ if __name__ == "__main__":
     pna_pom_embeds = pna(pom_embeds.copy())
 
     # load chemix model and get embedding
-    chemix_path = base_dir / "scripts_chemix/results/random_train_val/model"
+    chemix_path = base_dir / "scripts/chemix/results/random_train_val/model"
     if augment:
         chemix_path = Path(str(chemix_path) + "_augmented")
     hp_mix = ConfigDict(json.load(open(chemix_path / "hparams_chemix.json", "r")))
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     )
 
     # load chemix model and get embedding
-    pommix_path = base_dir / "scripts_pommix/results/random_train_val/model"
+    pommix_path = base_dir / "scripts/pommix/results/random_train_val/model"
     if augment:
         pommix_path = Path(str(pommix_path) + "_augmented")
     hp_gnn = ConfigDict(json.load(open(pommix_path / "hparams_graphnets.json", "r")))
