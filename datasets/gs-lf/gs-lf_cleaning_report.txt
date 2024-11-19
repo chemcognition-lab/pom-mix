@@ -200,7 +200,6 @@ Dataset cleaning report for gs-lf
 	Number of non-carbon molecules removed: 1
 	Size after removing non-carbon molecules: 4814
 --- COLUMN PROCESSING ---
-	gs-lf is a classification dataset. Cleaning columns
 --- REMOVING LOW COUNT COLUMNS ---
 	Length of original descriptor list before low count removal: 138
 	No columns are below count threshold 20
