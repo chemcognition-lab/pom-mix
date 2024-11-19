@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     # create POM embeddings
     MODEL_PATH = Path(
-        base_dir / "scripts_pom/gs-lf_models/pretrained_pom/"
+        base_dir / "scripts/pom/gs-lf_models/pretrained_pom/"
     )  # where the pretrained model is saved
     max_pad_len = df.columns.size  # mixtures are padded
     features = []

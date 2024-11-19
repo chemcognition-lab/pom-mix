@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 script_dir = Path(__file__).parent
-base_dir = Path(*script_dir.parts[:-1]) # this is for training
+base_dir = Path(*script_dir.parts[:-3]) # this is for training
 sys.path.append(str(base_dir / "src/"))
 
 import numpy as np
@@ -25,7 +25,7 @@ def make_embedding(arr):
 
 if __name__ == '__main__':    
     df = pd.read_csv(base_dir / 'datasets/mixtures/mixture_smi_definitions_clean.csv')
-    smiles = df.drop(['Dataset', 'Mixture Label'], axis=1)
+    smiles = df.drop(['Dataset', 'Mixture Label', 'length', 'Duplicate','Duplicate Of'], axis=1)
 
     embeddings = []
     for i, arr in smiles.iterrows():
