@@ -37,7 +37,9 @@ class AggEnum(StrEnum):
 
 class RegressorEnum(StrEnum):
     """Basic str enum for regressors."""
-
+    
+    cat = enum.auto()
+    mean = enum.auto()
     minmax = enum.auto()
     pna = enum.auto()
     sum = enum.auto()
@@ -372,6 +374,21 @@ class SumRegressor(nn.Module):
         output = self.layer(x)
         output = self.activation(output)
         return output
+    
+
+class MeanRegressor(nn.Module):
+    """Mixture pair PI similarity regressor."""
+
+    def __init__(self, output_dim: int, act: ActivationEnum):
+        super().__init__()
+        self.layer = nn.LazyLinear(output_dim)
+        self.activation = ACTIVATION_MAP[act]()
+
+    def forward(self, x: types.ManyEmbTensor) -> types.PredictionTensor:
+        x = x.mean(-1)
+        output = self.layer(x)
+        output = self.activation(output)
+        return output
 
 
 class CatRegressor(nn.Module):
@@ -538,6 +555,8 @@ def build_chemix(config):
     output_dim = config.regressor.output_dim
     act = config.regressor.activation
     regressor_type = {
+        RegressorEnum.mean: MeanRegressor(output_dim, act),
+        RegressorEnum.cat: CatRegressor(output_dim, act),
         RegressorEnum.sum: SumRegressor(output_dim, act),
         RegressorEnum.minmax: MinMaxRegressor(output_dim, act),
         RegressorEnum.pna: PNARegressor(output_dim, act),
