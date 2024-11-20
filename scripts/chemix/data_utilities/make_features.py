@@ -39,19 +39,11 @@ if __name__ == "__main__":
     # based on the mixture_smi_definitions_clean.csv file
     np.savez(DATASET_DIR / "mixture_rdkit2d.npz", features=features)
 
-    # Create a new dataframe with the same indices as the original df, but only with the pna/mean features
+    # Create a new dataframe with the same indices as the original df, but only with the pna features
     pd.DataFrame(
         pna_features, columns=[f"{i}" for i in range(pna_features.shape[1])], index=df.index
     ).reset_index().to_csv(
-        DATASET_DIR / "mixture_rdkit_pna_definitions_clean.csv", index=False
-    )
-
-    pd.DataFrame(
-        mean_features,
-        columns=[f"{i}" for i in range(mean_features.shape[1])],
-        index=df.index,
-    ).reset_index().to_csv(
-        DATASET_DIR / "mixture_rdkit_mean_definitions_clean.csv", index=False
+        DATASET_DIR / "mixture_rdkit_definitions_clean.csv", index=False
     )
 
     # create POM embeddings
