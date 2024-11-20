@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 script_dir = Path(__file__).parent
-base_dir = Path(*script_dir.parts[:-1])
+base_dir = Path(*script_dir.parts[:-2])
 sys.path.append(str(base_dir / "src/"))
 
 import copy
@@ -161,10 +161,18 @@ def main(
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Process some model parameters.")
+
     parser.add_argument(
-        "--run_name", help="The name of the run to identify model files."
+        "--run_name",
+        default= "interpretable_model",
+        help="The name of the run to identify model files.",
     )
-    parser.add_argument("--model_dir", help="Directory containing the model files.")
+    parser.add_argument(
+        "--model_dir",
+        default= base_dir / "scripts" / "chemix" / "results" / "interpretability_model",
+        help="Directory containing the model files.",
+    )
+
     parser.add_argument(
         "--interesting_idx",
         action="store_true",
@@ -174,8 +182,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    model_checkpoint_path = f"{args.model_dir}best_model_dict_{args.run_name}.pt"
-    model_hparams_path = f"{args.model_dir}hparams_chemix_{args.run_name}.json"
+    model_checkpoint_path = f"{args.model_dir}/best_model_dict_{args.run_name}.pt"
+    model_hparams_path = f"{args.model_dir}/hparams_chemix_{args.run_name}.json"
     config = OmegaConf.load(model_hparams_path)
 
     main(
