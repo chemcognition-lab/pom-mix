@@ -24,7 +24,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     df = pd.read_csv(base_dir / "figures" / "attention_interpretability" / "min_max_keys_across_rows.csv")
-    final_input_emb = torch.load("/u/rajao/pom-mix/figures/attention_interpretability/final_input_emb.pt", map_location=torch.device('cpu'))
+    final_input_emb = torch.load(base_dir / "figures/attention_interpretability/final_input_emb.pt", map_location=torch.device('cpu'))
 
     # Only select query molecules which are considered as "interacting" with key molecules
     df = df.loc[df["max_weight_val"] > 0.5]
