@@ -52,6 +52,7 @@ parser.add_argument(
     type=str,
     default="random_cv",
     choices=[
+        "rmselfsim_random_cv",
         "random_cv",
         "ablate_molecules",
         "ablate_components",
@@ -71,6 +72,12 @@ parser.add_argument(
     action="store_true",
     default=False,
     help="Toggle augmenting the training set.",
+)
+parser.add_argument(
+    "--rm-selfsim-data",
+    action="store_true",
+    default=False,
+    help="Remove self-similiarity mixture datapoints.",
 )
 parser.add_argument(
     "--pom-path",
@@ -118,6 +125,7 @@ if __name__ == "__main__":
     batch_size = FLAGS.batch_size
     no_bias = FLAGS.no_bias
     augment = FLAGS.augment
+    rm_selfsim = FLAGS.rm_selfsim_data
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Running on: {device}")
@@ -135,6 +143,15 @@ if __name__ == "__main__":
         dl.featurize("mix_pom_embeddings")
     else:
         dl.featurize("mix_smiles")
+
+    # Remove self-sim data points
+    if rm_selfsim:
+        print("Removing self-sim points")
+        identical_rows = np.all(dl.features[:, :, :, 0] == dl.features[:, :, :, 1], axis=(1, 2))
+        identical_row_indices = np.where(identical_rows)[0]
+
+        dl.features = dl.features[~identical_rows]
+        dl.labels = dl.labels[~identical_rows]
 
     # perform CV split
     sl = SplitLoader(FLAGS.split)

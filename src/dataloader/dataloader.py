@@ -515,6 +515,7 @@ class SplitLoader:
     def __init__(self, split_set: str = "random_cv"):
         assert split_set in [
             "random_cv",
+            "rmselfsim_random_cv",
             "ablate_components",
             "ablate_molecules",
             "lso_molecules",
