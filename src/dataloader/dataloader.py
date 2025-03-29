@@ -225,7 +225,8 @@ class DatasetLoader:
             "mix_smiles",
             "mix_rdkit2d",
             "mix_pom_embeddings",
-            "mix_molt5_embeddings"
+            "mix_molt5_embeddings",
+            "mix_molformer_embeddings"
         ]
 
         if isinstance(representation, Callable):
@@ -313,7 +314,7 @@ class DatasetLoader:
                 self.features = np.stack(feat_reduced, axis=-1)
 
 
-        elif representation in ["mix_pom_embeddings", "mix_molt5_embeddings"]:
+        elif representation in ["mix_pom_embeddings", "mix_molt5_embeddings", "mix_molformer_embeddings"]:
             # Features is ["Dataset", "Mixture 1", "Mixture 2"]
             tag = representation.replace("mix_", "")
             smi_df = pd.read_csv(
@@ -520,6 +521,7 @@ class SplitLoader:
             "ablate_molecules",
             "lso_molecules",
             "random_train_val",
+            "random_k10_cv"
         ]
         self.split_set = split_set
 
