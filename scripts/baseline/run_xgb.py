@@ -25,8 +25,8 @@ parser.add_argument(
     "--feat_type",
     action="store",
     type=str,
-    choices=["rdkit2d", "pom_embeddings", "molt5_embeddings"],
-    help="Feature type, select [rdkit2d, pom_embeddings, molt5_embeddings].",
+    choices=["rdkit2d", "pom_embeddings", "molt5_embeddings", "molformer_embeddings"],
+    help="Feature type, select [rdkit2d, pom_embeddings, molt5_embeddings, molformer_embeddings].",
 )
 FLAGS = parser.parse_args()
 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     feat_type = FLAGS.feat_type
     print(f"Running {feat_type}")
 
-    fname = f"xgb_{feat_type}"
+    fname = f"xgb_{feat_type}_k10"
     os.makedirs(fname, exist_ok=True)
 
     dl = DatasetLoader()
@@ -43,8 +43,8 @@ if __name__ == "__main__":
 
     if feat_type in ['rdkit2d', 'pom_embeddings']:
         dl.reduce('pna')
-    elif feat_type == 'molt5_embeddings':
-        dl.reduce('mean')       # MolT5 embeddings are too large for pna
+    elif feat_type in ['molt5_embeddings', 'molformer_embeddings']:
+        dl.reduce('mean')       # these embeddings are too large for pna
 
     # load splits
     sl = SplitLoader("random_cv")
