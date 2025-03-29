@@ -58,6 +58,7 @@ parser.add_argument(
         "ablate_components",
         "lso_molecules",
         "random_train_val",
+        "random_k10_cv",
     ],
 )
 parser.add_argument(
