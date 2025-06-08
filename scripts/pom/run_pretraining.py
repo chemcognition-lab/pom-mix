@@ -162,7 +162,7 @@ if __name__ == "__main__":
 
     # optimization things
     es = EarlyStopping(
-        gnn, patience=200, mode="maximize"
+        model, patience=200, mode="maximize"
     )  # early stopping only GNN weights
     log = {k: [] for k in ["epoch", "train_loss", "val_loss", "val_metric", "dataset"]}
 
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         log["val_metric"].append(avg_test_metric)
         log["dataset"].append("average")
 
-        stop = es.check_criteria(avg_test_metric, model.gnn_embedder)
+        stop = es.check_criteria(avg_test_metric, model)
         if stop:
             print(f"Early stop reached at {es.best_step} with loss {es.best_value}")
             break
@@ -248,8 +248,9 @@ if __name__ == "__main__":
 
     # save model weights
     best_model_dict = es.restore_best()
-    model.gnn_embedder.load_state_dict(best_model_dict)  # load the best one trained
+    model.load_state_dict(best_model_dict)  # load the best one trained
     torch.save(model.gnn_embedder.state_dict(), f"{fname}/gnn_embedder.pt")
+    torch.save(model.nn_predictor.state_dict(), f"{fname}/nn_predictor.pt")
 
     # also plot and save the training loss (for diagnostics)
     log.to_csv(f"{fname}/training.csv", index=False)
