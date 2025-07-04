@@ -1,4 +1,4 @@
-# From Molecules to Mixtures: Learning Representations of Olfactory Mixture Similarity using Inductive Biases
+# Does this smell the same? Learning representations of olfactory mixtures using inductive biases
 
 ![image](figures/figure1.png)
 
